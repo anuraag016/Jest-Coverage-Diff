@@ -2036,7 +2036,11 @@ function run() {
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
             const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
             child_process_1.execSync(commandToRun);
-            const codeCoverageNew = JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString());
+            const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
+            child_process_1.execSync('/usr/bin/git fetch');
+            child_process_1.execSync('/usr/bin/git stash');
+            child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
+            const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
             console.log(codeCoverageNew);
             yield githubClient.issues.createComment({
                 repo: repoName,
