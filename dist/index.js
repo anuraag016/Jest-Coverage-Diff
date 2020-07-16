@@ -2012,12 +2012,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const github = __importStar(__webpack_require__(469));
 const child_process_1 = __webpack_require__(129);
-const CoverageParser_1 = __webpack_require__(446);
-const CoverageDiffChecker_1 = __webpack_require__(593);
+const fs_1 = __importDefault(__webpack_require__(747));
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -2027,30 +2029,20 @@ function run() {
             const githubToken = core.getInput('accessToken');
             const fullCoverage = core.getInput('fullCoverageDiff');
             // const optionalArgs = core.getInput('optionalArgs');
-            const commandToRun = 'npx jest --coverage';
+            const commandToRun = 'npx jest --coverage --json';
             // const options: core.InputOptions = { required: true };
             const githubClient = github.getOctokit(githubToken);
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
             const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
-            const codeCoverageNew = child_process_1.execSync(commandToRun).toString();
-            child_process_1.execSync('/usr/bin/git fetch');
-            child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
-            const codeCoveragePrev = child_process_1.execSync(commandToRun).toString();
-            const coverageParserNew = new CoverageParser_1.CoverageParser(codeCoverageNew);
-            const coverageParserPrev = new CoverageParser_1.CoverageParser(codeCoveragePrev);
-            const coverageDiffChecker = new CoverageDiffChecker_1.CoverageDiffChecker(coverageParserPrev, coverageParserNew);
-            let postMessage = `${coverageParserNew.headerLines[1]}\n${coverageParserNew.headerLines[2]}\n`;
-            if (fullCoverage) {
-                postMessage += coverageDiffChecker.getFullCoverageWithDiff().join('\n');
-            }
-            else {
-                postMessage += coverageDiffChecker.getOnlyDiffLines().join('\n');
-            }
+            const codeCoverageNew = JSON.parse(child_process_1.execSync(commandToRun).toString());
+            child_process_1.execSync('npm install --dev nyc');
+            fs_1.default.writeFileSync('coverageFile.json', codeCoverageNew.coverageMap);
+            console.log(child_process_1.execSync('npx nyc -t coverageFile.json --reporter=json-summary').toString());
             yield githubClient.issues.createComment({
                 repo: repoName,
                 owner: repoOwner,
-                body: `Code coverage comparison ${branchNameBase} vs ${branchNameHead}: \n ${postMessage}`,
+                body: `Code coverage comparison ${branchNameBase} vs ${branchNameHead}: \n`,
                 issue_number: prNumber
             });
         }
@@ -5159,42 +5151,6 @@ function escapeProperty(s) {
 
 /***/ }),
 
-/***/ 446:
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CoverageParser = void 0;
-class CoverageParser {
-    constructor(coverageReport) {
-        this.coveragePercentages = [];
-        this.headerLines = [];
-        this.coverageFileNames = new Set();
-        const coverageReportParts = coverageReport.split('\n');
-        const breakCoverageReport = coverageReportParts.slice(3, coverageReportParts.length - 1);
-        // eslint-disable-next-line github/array-foreach
-        breakCoverageReport.forEach(coverageLine => {
-            const components = coverageLine.split('|');
-            const coveragePercentage = {
-                fileName: components[0],
-                statements: parseFloat(components[1]),
-                branch: parseFloat(components[2]),
-                func: parseFloat(components[3]),
-                lines: parseFloat(components[4]),
-                uncoveredLines: components[5] ? components[5].trim() : ''
-            };
-            this.coveragePercentages.push(coveragePercentage);
-            this.coverageFileNames.add(components[0].trimRight());
-        });
-        this.headerLines = coverageReportParts.slice(0, 3);
-    }
-}
-exports.CoverageParser = CoverageParser;
-
-
-/***/ }),
-
 /***/ 448:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -6813,109 +6769,6 @@ function parse(command, args, options) {
 }
 
 module.exports = parse;
-
-
-/***/ }),
-
-/***/ 593:
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CoverageDiffChecker = void 0;
-class CoverageDiffChecker {
-    constructor(oldCoverage, newCoverage) {
-        this.oldCoverage = oldCoverage;
-        this.newCoverage = newCoverage;
-        const oldMinusNew = this.setDifference(oldCoverage.coverageFileNames, newCoverage.coverageFileNames);
-        const newMinusOld = this.setDifference(newCoverage.coverageFileNames, oldCoverage.coverageFileNames);
-        this.exclusiveFileSet = this.setUnion(oldMinusNew, newMinusOld);
-    }
-    setDifference(setA, setB) {
-        return new Set([...setA].filter(x => !setB.has(x)));
-    }
-    setUnion(setA, setB) {
-        return new Set([...setA, ...setB]);
-    }
-    getOnlyDiffLines() {
-        return this.diffChecker(false);
-    }
-    getFullCoverageWithDiff() {
-        return this.diffChecker(true);
-    }
-    diffChecker(full) {
-        const lenNew = this.newCoverage.coveragePercentages.length;
-        const lenOld = this.oldCoverage.coveragePercentages.length;
-        const linesToReturn = [];
-        let indexNew = 0, indexOld = 0;
-        while (indexNew < lenNew || indexOld < lenOld) {
-            const coveragePercentageOld = this.oldCoverage.coveragePercentages[indexOld];
-            const coveragePercentageNew = this.newCoverage.coveragePercentages[indexNew];
-            if (this.exclusiveFileSet.has(coveragePercentageOld.fileName.trimRight())) {
-                linesToReturn.push(`~~${this.createUnchangedCoverageLine(coveragePercentageOld)}~~`);
-                indexOld++;
-            }
-            else if (this.exclusiveFileSet.has(coveragePercentageNew.fileName.trimRight())) {
-                linesToReturn.push(`**${this.createUnchangedCoverageLine(coveragePercentageNew)}**`);
-                indexNew++;
-            }
-            else if (coveragePercentageNew.fileName
-                .trim()
-                .localeCompare(coveragePercentageOld.fileName.trim())) {
-                indexOld++;
-                indexNew++;
-                if (this.compareCoverageNumber(coveragePercentageOld, coveragePercentageNew) !== 0) {
-                    const statementsLine = this.getDiffLineFromNumbers(coveragePercentageOld.statements, coveragePercentageNew.statements);
-                    const branchLine = this.getDiffLineFromNumbers(coveragePercentageOld.branch, coveragePercentageNew.branch);
-                    const funcLine = this.getDiffLineFromNumbers(coveragePercentageOld.func, coveragePercentageNew.func);
-                    const linesLine = this.getDiffLineFromNumbers(coveragePercentageOld.lines, coveragePercentageNew.lines);
-                    const uncoveredLinesLine = this.getDiffLine(coveragePercentageOld.uncoveredLines, coveragePercentageNew.uncoveredLines);
-                    const lineToAdd = `${coveragePercentageNew.fileName
-                        .trimRight()
-                        .replace(/ /g, '&nbsp;&nbsp;')}| ${statementsLine} | ${branchLine} | ${funcLine} | ${linesLine} | ${uncoveredLinesLine} \n`;
-                    linesToReturn.push(lineToAdd);
-                }
-                else if (full) {
-                    linesToReturn.push(this.createUnchangedCoverageLine(coveragePercentageNew));
-                }
-            }
-        }
-        return linesToReturn;
-    }
-    createUnchangedCoverageLine(coveragePercentage) {
-        return `${coveragePercentage.fileName} | ${coveragePercentage.statements} | ${coveragePercentage.branch} | ${coveragePercentage.func} | ${coveragePercentage.lines} | ${coveragePercentage.uncoveredLines}`;
-    }
-    compareCoverageNumber(prevPercentage, newPercentage) {
-        if (prevPercentage.statements !== newPercentage.statements ||
-            prevPercentage.branch !== newPercentage.branch ||
-            prevPercentage.func !== newPercentage.func ||
-            prevPercentage.lines !== newPercentage.lines ||
-            prevPercentage.uncoveredLines.localeCompare(newPercentage.uncoveredLines) !== 0) {
-            return 1;
-        }
-        return 0;
-    }
-    getDiffLineFromNumbers(prevVal, newVal) {
-        if (prevVal !== newVal) {
-            return `~~${prevVal}~~ **${newVal}**`;
-        }
-        return `${newVal}`;
-    }
-    getDiffLine(prevLine, newLine) {
-        if (prevLine.localeCompare(newLine) !== 0) {
-            if (prevLine === '') {
-                return `**${newLine}**`;
-            }
-            else if (newLine === '') {
-                return `~~${prevLine}~~`;
-            }
-            return `~~${prevLine}~~ **${newLine}**`;
-        }
-        return `${newLine}`;
-    }
-}
-exports.CoverageDiffChecker = CoverageDiffChecker;
 
 
 /***/ }),
