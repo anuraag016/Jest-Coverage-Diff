@@ -1,101 +1,47 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+# Jest coverage diff
 
-# Create a JavaScript Action using TypeScript
+Use the action to get jest coverage diff for pull requests as a comment on the pull request
+Helps the code reviewer to get the high level view of code coverage changes without leaving the pull request window 
 
-Use this template to bootstrap the creation of a JavaScript action.:rocket:
+# How It Works 
 
-This template includes compilication support, tests, a validation workflow, publishing, and versioning guidance.  
-
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
-
-## Create an action from this template
-
-Click the `Use this Template` and provide the new repo details for your action
-
-## Code in Master
-
-Install the dependencies  
+uses the following jest command to get code coverage summary as json for the pull request.
 ```bash
-$ npm install
+npx jest --coverage --coverageReporters="json-summary"
 ```
 
-Build the typescript and package it for distribution
-```bash
-$ npm run build && npm run pack
+Then switches branch to the base branch on which the pull request has been raised and runs the same command again.
+Calculates the diff between the two reports to figure out additions, removals, increase or decrease in code coverage. 
+And then posts that diff as a comment on the PR
+
+# Configuration
+
+The action assumes jest configuration and jest module already present in the workflow and uses the installed module and the already present config to run the tests. 
+
+Sample workflow for running this action 
+
 ```
+name: Node.js CI
 
-Run the tests :heavy_check_mark:  
-```bash
-$ npm test
+on: pull_request
 
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
-...
+jobs:
+  build:
+    strategy:
+      matrix:
+        node-version: [14.x]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm ci
+    - name: TestCoverage
+      id: testCovergae
+      uses: anuraag016/Jest-Coverage-Diff@master
+      with:
+        fullCoverageDiff: false // defaults to false, if made true whole coverage report is commented with the diff
 ```
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-```bash
-$ npm run pack
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Your action is now published! :rocket: 
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml)])
-
-```yaml
-uses: ./
-with:
-  milliseconds: 1000
-```
-
-See the [actions tab](https://github.com/actions/javascript-action/actions) for runs of this action! :rocket:
-
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action

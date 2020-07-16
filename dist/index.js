@@ -2029,9 +2029,7 @@ function run() {
             const repoOwner = github.context.repo.owner;
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
-            // const optionalArgs = core.getInput('optionalArgs');
             const commandToRun = 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"';
-            // const options: core.InputOptions = { required: true };
             const githubClient = github.getOctokit(githubToken);
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
@@ -2047,14 +2045,21 @@ function run() {
                 .toString()
                 .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
-            let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
-            messageToPost += diffChecker
-                .getCoverageDetails(!fullCoverage, `${currentDirectory}/`)
-                .join('\n');
+            let messageToPost = `Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`;
+            const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
+            if (coverageDetails.length === 0) {
+                messageToPost =
+                    'No changes to code coverage between the base branch and the head branch';
+            }
+            else {
+                messageToPost +=
+                    'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
+                messageToPost += coverageDetails.join('\n');
+            }
             yield githubClient.issues.createComment({
                 repo: repoName,
                 owner: repoOwner,
-                body: `Code coverage comparison ${branchNameBase} vs ${branchNameHead}: \n ${messageToPost}`,
+                body: messageToPost,
                 issue_number: prNumber
             });
         }
