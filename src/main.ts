@@ -33,7 +33,6 @@ async function run(): Promise<void> {
     const currentDirectory = execSync('pwd')
       .toString()
       .trim()
-    console.log(currentDirectory)
     const diffChecker: DiffChecker = new DiffChecker(
       codeCoverageNew,
       codeCoverageOld

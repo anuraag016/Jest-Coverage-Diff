@@ -2046,7 +2046,6 @@ function run() {
             const currentDirectory = child_process_1.execSync('pwd')
                 .toString()
                 .trim();
-            console.log(currentDirectory);
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
             messageToPost += diffChecker
@@ -6715,7 +6714,7 @@ class DiffChecker {
             }
             else {
                 if (!diffOnly) {
-                    returnStrings.push(`${key.replace(currentDirectory, '')} | ${this.diffCoverageReport[key].statements} | ${this.diffCoverageReport[key].branches} | ${this.diffCoverageReport[key].functions} | ${this.diffCoverageReport[key].lines}`);
+                    returnStrings.push(`${key.replace(currentDirectory, '')} | ${this.diffCoverageReport[key].statements.newPct} | ${this.diffCoverageReport[key].branches.newPct} | ${this.diffCoverageReport[key].functions.newPct} | ${this.diffCoverageReport[key].lines.newPct}`);
                 }
             }
         }

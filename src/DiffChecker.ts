@@ -75,10 +75,10 @@ export class DiffChecker {
         if (!diffOnly) {
           returnStrings.push(
             `${key.replace(currentDirectory, '')} | ${
-              this.diffCoverageReport[key].statements
-            } | ${this.diffCoverageReport[key].branches} | ${
-              this.diffCoverageReport[key].functions
-            } | ${this.diffCoverageReport[key].lines}`
+              this.diffCoverageReport[key].statements.newPct
+            } | ${this.diffCoverageReport[key].branches.newPct} | ${
+              this.diffCoverageReport[key].functions.newPct
+            } | ${this.diffCoverageReport[key].lines.newPct}`
           )
         }
       }
