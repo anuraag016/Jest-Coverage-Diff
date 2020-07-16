@@ -2044,6 +2044,7 @@ function run() {
             child_process_1.execSync(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
             const currentDirectory = child_process_1.execSync('pwd').toString();
+            console.log(currentDirectory);
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
             messageToPost += diffChecker

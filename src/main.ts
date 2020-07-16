@@ -31,6 +31,7 @@ async function run(): Promise<void> {
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
     )
     const currentDirectory = execSync('pwd').toString()
+    console.log(currentDirectory)
     const diffChecker: DiffChecker = new DiffChecker(
       codeCoverageNew,
       codeCoverageOld
