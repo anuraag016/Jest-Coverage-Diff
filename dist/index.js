@@ -2028,7 +2028,7 @@ function run() {
             const repoName = github.context.repo.repo;
             const repoOwner = github.context.repo.owner;
             const githubToken = core.getInput('accessToken');
-            const fullCoverage = core.getInput('fullCoverageDiff');
+            const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
             // const optionalArgs = core.getInput('optionalArgs');
             const commandToRun = 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"';
             // const options: core.InputOptions = { required: true };
@@ -2043,12 +2043,14 @@ function run() {
             child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
             child_process_1.execSync(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            const currentDirectory = child_process_1.execSync('pwd').toString();
+            const currentDirectory = child_process_1.execSync('pwd')
+                .toString()
+                .trim();
             console.log(currentDirectory);
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
             messageToPost += diffChecker
-                .getCoverageDetails(true, currentDirectory)
+                .getCoverageDetails(!fullCoverage, `${currentDirectory}/`)
                 .join('\n');
             yield githubClient.issues.createComment({
                 repo: repoName,

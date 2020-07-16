@@ -10,7 +10,7 @@ async function run(): Promise<void> {
     const repoName = github.context.repo.repo
     const repoOwner = github.context.repo.owner
     const githubToken = core.getInput('accessToken')
-    const fullCoverage = core.getInput('fullCoverageDiff')
+    const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'))
     // const optionalArgs = core.getInput('optionalArgs');
     const commandToRun =
       'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"'
@@ -30,7 +30,9 @@ async function run(): Promise<void> {
     const codeCoverageOld = <CoverageReport>(
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
     )
-    const currentDirectory = execSync('pwd').toString()
+    const currentDirectory = execSync('pwd')
+      .toString()
+      .trim()
     console.log(currentDirectory)
     const diffChecker: DiffChecker = new DiffChecker(
       codeCoverageNew,
@@ -39,7 +41,7 @@ async function run(): Promise<void> {
     let messageToPost =
       'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n'
     messageToPost += diffChecker
-      .getCoverageDetails(true, currentDirectory)
+      .getCoverageDetails(!fullCoverage, `${currentDirectory}/`)
       .join('\n')
     await githubClient.issues.createComment({
       repo: repoName,
