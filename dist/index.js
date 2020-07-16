@@ -2043,9 +2043,12 @@ function run() {
             child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
             child_process_1.execSync(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageOld, codeCoverageNew);
+            const currentDirectory = child_process_1.execSync('pwd').toString();
+            const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
-            messageToPost += diffChecker.getCoverageDetails(true).join('\n');
+            messageToPost += diffChecker
+                .getCoverageDetails(true, currentDirectory)
+                .join('\n');
             yield githubClient.issues.createComment({
                 repo: repoName,
                 owner: repoOwner,
@@ -6700,16 +6703,16 @@ class DiffChecker {
             }
         }
     }
-    getCoverageDetails(diffOnly) {
+    getCoverageDetails(diffOnly, currentDirectory) {
         const keys = Object.keys(this.diffCoverageReport);
         const returnStrings = [];
         for (const key of keys) {
             if (this.compareCoverageValues(this.diffCoverageReport[key]) !== 0) {
-                returnStrings.push(this.createDiffLine(key, this.diffCoverageReport[key]));
+                returnStrings.push(this.createDiffLine(key.replace(currentDirectory, ''), this.diffCoverageReport[key]));
             }
             else {
                 if (!diffOnly) {
-                    returnStrings.push(`${key} | ${this.diffCoverageReport[key].statements} | ${this.diffCoverageReport[key].branches} | ${this.diffCoverageReport[key].functions} | ${this.diffCoverageReport[key].lines}`);
+                    returnStrings.push(`${key.replace(currentDirectory, '')} | ${this.diffCoverageReport[key].statements} | ${this.diffCoverageReport[key].branches} | ${this.diffCoverageReport[key].functions} | ${this.diffCoverageReport[key].lines}`);
                 }
             }
         }
