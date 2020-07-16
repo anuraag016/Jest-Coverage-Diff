@@ -2041,6 +2041,7 @@ function run() {
             child_process_1.execSync('/usr/bin/git fetch');
             child_process_1.execSync('/usr/bin/git stash');
             child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
+            child_process_1.execSync(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageOld, codeCoverageNew);
             let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
