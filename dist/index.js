@@ -2038,7 +2038,7 @@ function run() {
             const codeCoverageNew = JSON.parse(child_process_1.execSync(commandToRun).toString());
             child_process_1.execSync('npm install --dev nyc');
             fs_1.default.writeFileSync('coverageFile.json', codeCoverageNew.coverageMap);
-            console.log(child_process_1.execSync('npx nyc -t coverageFile.json --reporter=json-summary').toString());
+            console.log(child_process_1.execSync('npx nyc report -t . --reporter=json-summary').toString());
             yield githubClient.issues.createComment({
                 repo: repoName,
                 owner: repoOwner,
