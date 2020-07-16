@@ -2029,16 +2029,15 @@ function run() {
             const githubToken = core.getInput('accessToken');
             const fullCoverage = core.getInput('fullCoverageDiff');
             // const optionalArgs = core.getInput('optionalArgs');
-            const commandToRun = 'npx jest --coverage --json';
+            const commandToRun = 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"';
             // const options: core.InputOptions = { required: true };
             const githubClient = github.getOctokit(githubToken);
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
             const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
-            const codeCoverageNew = JSON.parse(child_process_1.execSync(commandToRun).toString());
-            child_process_1.execSync('npm install --dev nyc');
-            fs_1.default.writeFileSync('coverageFile.json', codeCoverageNew.coverageMap);
-            console.log(child_process_1.execSync('npx nyc report -t . --reporter=json-summary').toString());
+            child_process_1.execSync(commandToRun);
+            const codeCoverageNew = JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString());
+            console.log(codeCoverageNew);
             yield githubClient.issues.createComment({
                 repo: repoName,
                 owner: repoOwner,
