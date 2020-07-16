@@ -2020,6 +2020,7 @@ const core = __importStar(__webpack_require__(470));
 const github = __importStar(__webpack_require__(469));
 const child_process_1 = __webpack_require__(129);
 const fs_1 = __importDefault(__webpack_require__(747));
+const DiffChecker_1 = __webpack_require__(563);
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -2041,11 +2042,13 @@ function run() {
             child_process_1.execSync('/usr/bin/git stash');
             child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            console.log(codeCoverageNew);
+            const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageOld, codeCoverageNew);
+            let messageToPost = 'File | % Stmts | % Branch | % Funcs | % Lines \n -----|---------|----------|---------|------ \n';
+            messageToPost += diffChecker.getCoverageDetails(true).join('\n');
             yield githubClient.issues.createComment({
                 repo: repoName,
                 owner: repoOwner,
-                body: `Code coverage comparison ${branchNameBase} vs ${branchNameHead}: \n`,
+                body: `Code coverage comparison ${branchNameBase} vs ${branchNameHead}: \n ${messageToPost}`,
                 issue_number: prNumber
             });
         }
@@ -6639,6 +6642,101 @@ function isPlainObject(o) {
 }
 
 module.exports = isPlainObject;
+
+
+/***/ }),
+
+/***/ 563:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DiffChecker = void 0;
+class DiffChecker {
+    constructor(coverageReportNew, coverageReportOld) {
+        this.diffCoverageReport = {};
+        const reportNewKeys = Object.keys(coverageReportNew);
+        for (const key of reportNewKeys) {
+            this.diffCoverageReport[key] = {
+                branches: {
+                    newPct: this.getPercentage(coverageReportNew[key].branches)
+                },
+                statements: {
+                    newPct: this.getPercentage(coverageReportNew[key].statements)
+                },
+                lines: {
+                    newPct: this.getPercentage(coverageReportNew[key].lines)
+                },
+                functions: {
+                    newPct: this.getPercentage(coverageReportNew[key].functions)
+                }
+            };
+        }
+        const reportOldKeys = Object.keys(coverageReportOld);
+        for (const key of reportOldKeys) {
+            if (this.diffCoverageReport[key]) {
+                this.diffCoverageReport[key].statements.oldPct = this.getPercentage(coverageReportOld[key].statements);
+                this.diffCoverageReport[key].branches.oldPct = this.getPercentage(coverageReportOld[key].branches);
+                this.diffCoverageReport[key].functions.oldPct = this.getPercentage(coverageReportOld[key].functions);
+                this.diffCoverageReport[key].lines.oldPct = this.getPercentage(coverageReportOld[key].lines);
+            }
+            else {
+                this.diffCoverageReport[key] = {
+                    branches: {
+                        oldPct: this.getPercentage(coverageReportOld[key].branches)
+                    },
+                    statements: {
+                        oldPct: this.getPercentage(coverageReportOld[key].statements)
+                    },
+                    lines: {
+                        oldPct: this.getPercentage(coverageReportOld[key].lines)
+                    },
+                    functions: {
+                        oldPct: this.getPercentage(coverageReportOld[key].functions)
+                    }
+                };
+            }
+        }
+    }
+    getCoverageDetails(diffOnly) {
+        const keys = Object.keys(this.diffCoverageReport);
+        const returnStrings = [];
+        for (const key of keys) {
+            if (this.compareCoverageValues(this.diffCoverageReport[key]) !== 0) {
+                returnStrings.push(this.createDiffLine(key, this.diffCoverageReport[key]));
+            }
+            else {
+                if (!diffOnly) {
+                    returnStrings.push(`${key} | ${this.diffCoverageReport[key].statements} | ${this.diffCoverageReport[key].branches} | ${this.diffCoverageReport[key].functions} | ${this.diffCoverageReport[key].lines}`);
+                }
+            }
+        }
+        return returnStrings;
+    }
+    createDiffLine(name, diffFileCoverageData) {
+        if (!diffFileCoverageData.branches.oldPct) {
+            return `**${name}** | **${diffFileCoverageData.statements.newPct}** | **${diffFileCoverageData.branches.newPct}** | **${diffFileCoverageData.functions.newPct}** | **${diffFileCoverageData.lines.newPct}**`;
+        }
+        else if (!diffFileCoverageData.branches.newPct) {
+            return `~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`;
+        }
+        return `${name} | ~~${diffFileCoverageData.statements.oldPct}~~ **${diffFileCoverageData.statements.newPct}** | ~~${diffFileCoverageData.branches.oldPct}~~ **${diffFileCoverageData.branches.newPct}** | ~~${diffFileCoverageData.functions.oldPct}~~ **${diffFileCoverageData.functions.newPct}** | ~~${diffFileCoverageData.lines.oldPct}~~ **${diffFileCoverageData.lines.newPct}**`;
+    }
+    compareCoverageValues(diffCoverageData) {
+        const keys = Object.keys(diffCoverageData);
+        for (const key of keys) {
+            if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    getPercentage(coverageData) {
+        return coverageData.pct;
+    }
+}
+exports.DiffChecker = DiffChecker;
 
 
 /***/ }),
