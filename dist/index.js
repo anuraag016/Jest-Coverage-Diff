@@ -6860,7 +6860,9 @@ class CoverageDiffChecker {
                 linesToReturn.push(`**${this.createUnchangedCoverageLine(coveragePercentageNew)}**`);
                 indexNew++;
             }
-            else if (coveragePercentageNew.fileName.localeCompare(coveragePercentageOld.fileName)) {
+            else if (coveragePercentageNew.fileName
+                .trim()
+                .localeCompare(coveragePercentageOld.fileName.trim())) {
                 indexOld++;
                 indexNew++;
                 if (this.compareCoverageNumber(coveragePercentageOld, coveragePercentageNew) !== 0) {

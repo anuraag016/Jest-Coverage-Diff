@@ -63,9 +63,9 @@ export class CoverageDiffChecker {
         )
         indexNew++
       } else if (
-        coveragePercentageNew.fileName.localeCompare(
-          coveragePercentageOld.fileName
-        )
+        coveragePercentageNew.fileName
+          .trim()
+          .localeCompare(coveragePercentageOld.fileName.trim())
       ) {
         indexOld++
         indexNew++
