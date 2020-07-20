@@ -1,0 +1,13 @@
+name: 'Jest Coverage Diff'
+description: 'A github action to comment jest coverage diff on a PR'
+author: 'Anuraag Puri'
+inputs:
+  accessToken:
+    description: 'access token required to comment on a pr'
+    default: ${{ github.token }}
+  fullCoverageDiff:
+    description: 'get the full coverage with diff or only the diff'
+    default: false
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
