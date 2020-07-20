@@ -8,6 +8,8 @@ inputs:
   fullCoverageDiff:
     description: 'get the full coverage with diff or only the diff'
     default: false
+color: red
+icon: git-pull-request
 runs:
   using: 'node12'
   main: 'dist/index.js'
