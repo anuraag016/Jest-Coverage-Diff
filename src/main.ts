@@ -11,8 +11,7 @@ async function run(): Promise<void> {
     const repoOwner = github.context.repo.owner
     const githubToken = core.getInput('accessToken')
     const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'))
-    const commandToRun =
-      'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"'
+    const commandToRun = core.getInput('runCommand')
     const githubClient = github.getOctokit(githubToken)
     const prNumber = github.context.issue.number
     const branchNameBase = github.context.payload.pull_request?.base.ref

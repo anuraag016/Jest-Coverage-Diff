@@ -2029,7 +2029,7 @@ function run() {
             const repoOwner = github.context.repo.owner;
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
-            const commandToRun = 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"';
+            const commandToRun = core.getInput('runCommand');
             const githubClient = github.getOctokit(githubToken);
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
