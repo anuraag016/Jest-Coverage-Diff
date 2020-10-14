@@ -8,6 +8,9 @@ inputs:
   fullCoverageDiff:
     description: 'get the full coverage with diff or only the diff'
     default: false
+  runCommand:
+    description: 'custom command to get json-summary'
+    default: 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"'
 branding:
   color: red
   icon: git-pull-request
