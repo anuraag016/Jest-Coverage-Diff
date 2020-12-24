@@ -13,7 +13,7 @@ inputs:
     default: 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"'
   delta:
     description: 'Difference between the old and final test coverage'
-    default: 1
+    default: 0
 branding:
   color: red
   icon: git-pull-request

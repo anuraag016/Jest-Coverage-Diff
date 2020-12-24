@@ -2030,6 +2030,7 @@ function run() {
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
             const commandToRun = core.getInput('runCommand');
+            const delta = Number(core.getInput('delta'));
             const githubClient = github.getOctokit(githubToken);
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
@@ -2046,7 +2047,7 @@ function run() {
                 .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             let messageToPost = `Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`;
-            const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
+            const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`, delta);
             if (coverageDetails.length === 0) {
                 messageToPost =
                     'No changes to code coverage between the base branch and the head branch';
@@ -6710,11 +6711,11 @@ class DiffChecker {
             }
         }
     }
-    getCoverageDetails(diffOnly, currentDirectory) {
+    getCoverageDetails(diffOnly, currentDirectory, delta) {
         const keys = Object.keys(this.diffCoverageReport);
         const returnStrings = [];
         for (const key of keys) {
-            if (this.compareCoverageValues(this.diffCoverageReport[key]) !== 0) {
+            if (this.compareCoverageValues(this.diffCoverageReport[key], delta) !== 0) {
                 returnStrings.push(this.createDiffLine(key.replace(currentDirectory, ''), this.diffCoverageReport[key]));
             }
             else {
@@ -6734,10 +6735,15 @@ class DiffChecker {
         }
         return `${name} | ~~${diffFileCoverageData.statements.oldPct}~~ **${diffFileCoverageData.statements.newPct}** | ~~${diffFileCoverageData.branches.oldPct}~~ **${diffFileCoverageData.branches.newPct}** | ~~${diffFileCoverageData.functions.oldPct}~~ **${diffFileCoverageData.functions.newPct}** | ~~${diffFileCoverageData.lines.oldPct}~~ **${diffFileCoverageData.lines.newPct}**`;
     }
-    compareCoverageValues(diffCoverageData) {
+    compareCoverageValues(diffCoverageData, delta) {
         const keys = Object.keys(diffCoverageData);
         for (const key of keys) {
             if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
+                const oldValue = Number(diffCoverageData[key].oldPct);
+                const newValue = Number(diffCoverageData[key].newPct);
+                if (oldValue - newValue > delta) {
+                    throw Error(`Current PR reduces the test percentage by ${delta}`);
+                }
                 return 1;
             }
         }
