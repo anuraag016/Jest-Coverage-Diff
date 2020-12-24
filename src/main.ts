@@ -12,6 +12,7 @@ async function run(): Promise<void> {
     const githubToken = core.getInput('accessToken')
     const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'))
     const commandToRun = core.getInput('runCommand')
+    const delta = core.getInput('delta')
     const githubClient = github.getOctokit(githubToken)
     const prNumber = github.context.issue.number
     const branchNameBase = github.context.payload.pull_request?.base.ref
@@ -37,7 +38,8 @@ async function run(): Promise<void> {
     let messageToPost = `Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`
     const coverageDetails = diffChecker.getCoverageDetails(
       !fullCoverage,
-      `${currentDirectory}/`
+      `${currentDirectory}/`,
+      delta,
     )
     if (coverageDetails.length === 0) {
       messageToPost =

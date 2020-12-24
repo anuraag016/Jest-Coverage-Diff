@@ -60,11 +60,11 @@ export class DiffChecker {
     }
   }
 
-  getCoverageDetails(diffOnly: boolean, currentDirectory: string): string[] {
+  getCoverageDetails(diffOnly: boolean, currentDirectory: string, delta: number): string[] {
     const keys = Object.keys(this.diffCoverageReport)
     const returnStrings: string[] = []
     for (const key of keys) {
-      if (this.compareCoverageValues(this.diffCoverageReport[key]) !== 0) {
+      if (this.compareCoverageValues(this.diffCoverageReport[key], delta) !== 0) {
         returnStrings.push(
           this.createDiffLine(
             key.replace(currentDirectory, ''),
@@ -99,13 +99,19 @@ export class DiffChecker {
   }
 
   private compareCoverageValues(
-    diffCoverageData: DiffFileCoverageData
+    diffCoverageData: DiffFileCoverageData,
+    delta: number
   ): number {
     const keys: ('lines' | 'statements' | 'branches' | 'functions')[] = <
       ('lines' | 'statements' | 'branches' | 'functions')[]
     >Object.keys(diffCoverageData)
     for (const key of keys) {
       if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
+        const oldValue: number = Number(diffCoverageData[key].oldPct)
+        const newValue: number = Number(diffCoverageData[key].newPct) 
+        if (oldValue - newValue > delta) {
+          throw Error(`Current PR reduces the test percentage by ${delta}`)
+        }
         return 1
       }
     }
