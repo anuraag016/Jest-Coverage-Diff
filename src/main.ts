@@ -38,8 +38,7 @@ async function run(): Promise<void> {
     let messageToPost = `Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`
     const coverageDetails = diffChecker.getCoverageDetails(
       !fullCoverage,
-      `${currentDirectory}/`,
-      delta,
+      `${currentDirectory}/`
     )
     if (coverageDetails.length === 0) {
       messageToPost =
@@ -55,6 +54,11 @@ async function run(): Promise<void> {
       body: messageToPost,
       issue_number: prNumber
     })
+
+    // check if the test coverage is falling below delta/tolerance.
+    if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
+      throw Error(`Current PR reduces the test percentage by ${delta}`)
+    }
   } catch (error) {
     core.setFailed(error)
   }
