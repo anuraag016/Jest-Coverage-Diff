@@ -57,7 +57,14 @@ async function run(): Promise<void> {
 
     // check if the test coverage is falling below delta/tolerance.
     if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
-      throw Error(`Current PR reduces the test percentage by ${delta}`)
+      messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`
+      await githubClient.issues.createComment({
+        repo: repoName,
+        owner: repoOwner,
+        body: messageToPost,
+        issue_number: prNumber
+      })
+      throw Error(messageToPost)
     }
   } catch (error) {
     core.setFailed(error)
