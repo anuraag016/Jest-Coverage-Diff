@@ -2047,7 +2047,7 @@ function run() {
                 .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             let messageToPost = `Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`;
-            const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`, delta);
+            const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
             if (coverageDetails.length === 0) {
                 messageToPost =
                     'No changes to code coverage between the base branch and the head branch';
@@ -2063,6 +2063,17 @@ function run() {
                 body: messageToPost,
                 issue_number: prNumber
             });
+            // check if the test coverage is falling below delta/tolerance.
+            if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
+                messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`;
+                yield githubClient.issues.createComment({
+                    repo: repoName,
+                    owner: repoOwner,
+                    body: messageToPost,
+                    issue_number: prNumber
+                });
+                throw Error(messageToPost);
+            }
         }
         catch (error) {
             core.setFailed(error);
@@ -6711,11 +6722,11 @@ class DiffChecker {
             }
         }
     }
-    getCoverageDetails(diffOnly, currentDirectory, delta) {
+    getCoverageDetails(diffOnly, currentDirectory) {
         const keys = Object.keys(this.diffCoverageReport);
         const returnStrings = [];
         for (const key of keys) {
-            if (this.compareCoverageValues(this.diffCoverageReport[key], delta) !== 0) {
+            if (this.compareCoverageValues(this.diffCoverageReport[key]) !== 0) {
                 returnStrings.push(this.createDiffLine(key.replace(currentDirectory, ''), this.diffCoverageReport[key]));
             }
             else {
@@ -6726,6 +6737,23 @@ class DiffChecker {
         }
         return returnStrings;
     }
+    checkIfTestCoverageFallsBelowDelta(delta) {
+        const keys = Object.keys(this.diffCoverageReport);
+        for (const key of keys) {
+            const diffCoverageData = this.diffCoverageReport[key];
+            const keys = Object.keys(diffCoverageData);
+            for (const key of keys) {
+                if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
+                    const oldValue = Number(diffCoverageData[key].oldPct);
+                    const newValue = Number(diffCoverageData[key].newPct);
+                    if (oldValue - newValue > delta) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     createDiffLine(name, diffFileCoverageData) {
         if (!diffFileCoverageData.branches.oldPct) {
             return `**${name}** | **${diffFileCoverageData.statements.newPct}** | **${diffFileCoverageData.branches.newPct}** | **${diffFileCoverageData.functions.newPct}** | **${diffFileCoverageData.lines.newPct}**`;
@@ -6735,15 +6763,10 @@ class DiffChecker {
         }
         return `${name} | ~~${diffFileCoverageData.statements.oldPct}~~ **${diffFileCoverageData.statements.newPct}** | ~~${diffFileCoverageData.branches.oldPct}~~ **${diffFileCoverageData.branches.newPct}** | ~~${diffFileCoverageData.functions.oldPct}~~ **${diffFileCoverageData.functions.newPct}** | ~~${diffFileCoverageData.lines.oldPct}~~ **${diffFileCoverageData.lines.newPct}**`;
     }
-    compareCoverageValues(diffCoverageData, delta) {
+    compareCoverageValues(diffCoverageData) {
         const keys = Object.keys(diffCoverageData);
         for (const key of keys) {
             if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
-                const oldValue = Number(diffCoverageData[key].oldPct);
-                const newValue = Number(diffCoverageData[key].newPct);
-                if (oldValue - newValue > delta) {
-                    throw Error(`Current PR reduces the test percentage by ${delta}`);
-                }
                 return 1;
             }
         }

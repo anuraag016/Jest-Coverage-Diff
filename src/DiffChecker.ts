@@ -60,11 +60,11 @@ export class DiffChecker {
     }
   }
 
-  getCoverageDetails(diffOnly: boolean, currentDirectory: string, delta: number): string[] {
+  getCoverageDetails(diffOnly: boolean, currentDirectory: string): string[] {
     const keys = Object.keys(this.diffCoverageReport)
     const returnStrings: string[] = []
     for (const key of keys) {
-      if (this.compareCoverageValues(this.diffCoverageReport[key], delta) !== 0) {
+      if (this.compareCoverageValues(this.diffCoverageReport[key]) !== 0) {
         returnStrings.push(
           this.createDiffLine(
             key.replace(currentDirectory, ''),
@@ -86,6 +86,27 @@ export class DiffChecker {
     return returnStrings
   }
 
+  checkIfTestCoverageFallsBelowDelta(delta: number): boolean {
+    const keys = Object.keys(this.diffCoverageReport)
+    for (const key of keys) {
+      const diffCoverageData = this.diffCoverageReport[key]
+      const keys: ('lines' | 'statements' | 'branches' | 'functions')[] = <
+        ('lines' | 'statements' | 'branches' | 'functions')[]
+      >Object.keys(diffCoverageData)
+      for (const key of keys) {
+        if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
+          const oldValue: number = Number(diffCoverageData[key].oldPct)
+          const newValue: number = Number(diffCoverageData[key].newPct)
+          if (oldValue - newValue > delta) {
+            return true
+          }
+        }
+      }
+    }
+
+    return false
+  }
+
   private createDiffLine(
     name: string,
     diffFileCoverageData: DiffFileCoverageData
@@ -99,19 +120,13 @@ export class DiffChecker {
   }
 
   private compareCoverageValues(
-    diffCoverageData: DiffFileCoverageData,
-    delta: number
+    diffCoverageData: DiffFileCoverageData
   ): number {
     const keys: ('lines' | 'statements' | 'branches' | 'functions')[] = <
       ('lines' | 'statements' | 'branches' | 'functions')[]
     >Object.keys(diffCoverageData)
     for (const key of keys) {
       if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
-        const oldValue: number = Number(diffCoverageData[key].oldPct)
-        const newValue: number = Number(diffCoverageData[key].newPct) 
-        if (oldValue - newValue > delta) {
-          throw Error(`Current PR reduces the test percentage by ${delta}`)
-        }
         return 1
       }
     }
