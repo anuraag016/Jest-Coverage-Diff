@@ -28,6 +28,20 @@ NOTE : The action will work perfectly only for pull requests. Have not been test
 
 The action assumes jest configuration and jest module already present in the workflow and uses the installed module and the already present config to run the tests. 
 
+**NEW:** 
+
+ - The action now supports custom run command, for custom use cases, using the variable runCommand, you can now pass your own command to run. Following is an example where we want to collect coverage from only few files out of all the code and want to use custom options such as `forceExit` & `detectOpenHandles`.
+```bash
+   runCommand: "npx jest --collectCoverageFrom='[\"src/**/*.{js,jsx,ts,tsx}\"]' --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters='json-summary' --forceExit --detectOpenHandles test/.*test.*"
+```
+**NOTE:** If using custom command, `--coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters='json-summary'`, these options are necessary for the action to work properly. These options tells jest to collect the coverage in json summary format and put the final output in the root folder. Since these are necessary, will make the action add them automatically in the next version. 
+
+ - Do you want to fail the workflow if the commited code decreases the percentage below a tolerable level? Do you to start a healthy culture of writing test cases? 
+ The action now also supports failing the run if percentage diff is more than a specified delta value for any file, you can specify the delta value using the variable delta
+ ```bash
+   delta: 1 // the action will fail if any of the percentage dip is more than 1% for any changed file
+ ```
+
 Sample workflow for running this action 
 
 ```
@@ -54,4 +68,6 @@ jobs:
       uses: anuraag016/Jest-Coverage-Diff@master
       with:
         fullCoverageDiff: false // defaults to false, if made true whole coverage report is commented with the diff
+        runCommand: "npx jest --collectCoverageFrom='[\"src/**/*.{js,jsx,ts,tsx}\"]' --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters='json-summary' --forceExit --detectOpenHandles test/.*test.*"
+        delta: 0.5
 ```
