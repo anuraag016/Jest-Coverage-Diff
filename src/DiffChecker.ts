@@ -2,6 +2,11 @@ import {CoverageReport} from './Model/CoverageReport'
 import {DiffCoverageReport} from './Model/DiffCoverageReport'
 import {CoverageData} from './Model/CoverageData'
 import {DiffFileCoverageData} from './Model/DiffFileCoverageData'
+import {DiffCoverageData} from './Model/DiffCoverageData'
+
+const increasedCoverageIcon = ':green_circle:'
+const decreasedCoverageIcon = ':red_circle:'
+const newCoverageIcon = ':new:'
 
 export class DiffChecker {
   private diffCoverageReport: DiffCoverageReport = {}
@@ -95,9 +100,7 @@ export class DiffChecker {
       >Object.keys(diffCoverageData)
       for (const key of keys) {
         if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
-          const oldValue: number = Number(diffCoverageData[key].oldPct)
-          const newValue: number = Number(diffCoverageData[key].newPct)
-          if (oldValue - newValue > delta) {
+          if (this.getPercentageDiff(diffCoverageData[key]) > delta) {
             return true
           }
         }
@@ -112,11 +115,23 @@ export class DiffChecker {
     diffFileCoverageData: DiffFileCoverageData
   ): string {
     if (!diffFileCoverageData.branches.oldPct) {
-      return `**${name}** | **${diffFileCoverageData.statements.newPct}** | **${diffFileCoverageData.branches.newPct}** | **${diffFileCoverageData.functions.newPct}** | **${diffFileCoverageData.lines.newPct}**`
+      // No old coverage found so that means we added a new file coverage
+      return ` ${newCoverageIcon} | **${name}** | **${diffFileCoverageData.statements.newPct}** | **${diffFileCoverageData.branches.newPct}** | **${diffFileCoverageData.functions.newPct}** | **${diffFileCoverageData.lines.newPct}**`
     } else if (!diffFileCoverageData.branches.newPct) {
-      return `~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`
+      // No new coverage found so that means we added a new deleted coverage
+      return ` ${decreasedCoverageIcon} | ~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`
     }
-    return `${name} | ~~${diffFileCoverageData.statements.oldPct}~~ **${diffFileCoverageData.statements.newPct}** | ~~${diffFileCoverageData.branches.oldPct}~~ **${diffFileCoverageData.branches.newPct}** | ~~${diffFileCoverageData.functions.oldPct}~~ **${diffFileCoverageData.functions.newPct}** | ~~${diffFileCoverageData.lines.oldPct}~~ **${diffFileCoverageData.lines.newPct}**`
+    // Coverage existed before so calculate the diff status
+    const statusIcon = this.getStatusIcon(diffFileCoverageData)
+    return ` ${statusIcon} | ${name} | ${
+      diffFileCoverageData.statements.newPct
+    } **(${this.getPercentageDiff(diffFileCoverageData.statements)})** | ${
+      diffFileCoverageData.branches.newPct
+    } **(${this.getPercentageDiff(diffFileCoverageData.branches)})** | ${
+      diffFileCoverageData.functions.newPct
+    } **(${this.getPercentageDiff(diffFileCoverageData.functions)})** | ${
+      diffFileCoverageData.lines.newPct
+    } **(${this.getPercentageDiff(diffFileCoverageData.lines)})**`
   }
 
   private compareCoverageValues(
@@ -135,5 +150,22 @@ export class DiffChecker {
 
   private getPercentage(coverageData: CoverageData): number {
     return coverageData.pct
+  }
+
+  private getStatusIcon(
+    diffFileCoverageData: DiffFileCoverageData
+  ): ':green_circle:' | ':red_circle:' {
+    let overallDiff = 0
+    Object.values(diffFileCoverageData).forEach(coverageData => {
+      overallDiff = overallDiff + this.getPercentageDiff(coverageData)
+    })
+    if (overallDiff < 0) {
+      return decreasedCoverageIcon
+    }
+    return increasedCoverageIcon
+  }
+
+  private getPercentageDiff(diffData: DiffCoverageData): number {
+    return Number(diffData.newPct) - Number(diffData.oldPct)
   }
 }
