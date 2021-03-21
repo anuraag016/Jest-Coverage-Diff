@@ -166,6 +166,9 @@ export class DiffChecker {
   }
 
   private getPercentageDiff(diffData: DiffCoverageData): number {
-    return Number(diffData.newPct) - Number(diffData.oldPct)
+    // get diff
+    const diff = Number(diffData.newPct) - Number(diffData.oldPct)
+    // round off the diff to 2 decimal places
+    return Math.round((diff + Number.EPSILON) * 100) / 100
   }
 }

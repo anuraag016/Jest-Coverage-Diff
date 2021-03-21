@@ -6791,7 +6791,10 @@ class DiffChecker {
         return increasedCoverageIcon;
     }
     getPercentageDiff(diffData) {
-        return Number(diffData.newPct) - Number(diffData.oldPct);
+        // get diff
+        const diff = Number(diffData.newPct) - Number(diffData.oldPct);
+        // round off the diff to 2 decimal places
+        return Math.round((diff + Number.EPSILON) * 100) / 100;
     }
 }
 exports.DiffChecker = DiffChecker;
