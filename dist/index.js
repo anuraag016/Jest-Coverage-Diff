@@ -2046,7 +2046,8 @@ function run() {
                 .toString()
                 .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
-            let messageToPost = `Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`;
+            let messageToPost = `## Test coverage results :test_tube: \n
+    Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n`;
             const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
             if (coverageDetails.length === 0) {
                 messageToPost =
