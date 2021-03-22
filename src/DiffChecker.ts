@@ -100,7 +100,7 @@ export class DiffChecker {
       >Object.keys(diffCoverageData)
       for (const key of keys) {
         if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
-          if (this.getPercentageDiff(diffCoverageData[key]) > delta) {
+          if (-this.getPercentageDiff(diffCoverageData[key]) > delta) {
             return true
           }
         }
