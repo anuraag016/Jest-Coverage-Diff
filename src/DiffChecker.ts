@@ -156,7 +156,7 @@ export class DiffChecker {
   }
 
   private getPercentage(coverageData: CoverageData): number {
-    return coverageData.pct
+    return coverageData.pct || 0
   }
 
   private getStatusIcon(

@@ -6782,7 +6782,7 @@ class DiffChecker {
         return 0;
     }
     getPercentage(coverageData) {
-        return coverageData.pct;
+        return coverageData.pct || 0;
     }
     getStatusIcon(diffFileCoverageData) {
         let overallDiff = 0;
