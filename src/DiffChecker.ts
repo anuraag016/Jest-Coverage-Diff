@@ -16,51 +16,26 @@ export class DiffChecker {
     coverageReportOld: CoverageReport
   ) {
     const reportNewKeys = Object.keys(coverageReportNew)
-    for (const key of reportNewKeys) {
-      this.diffCoverageReport[key] = {
+    const reportOldKeys = Object.keys(coverageReportOld)
+    const reportKeys = new Set([...reportNewKeys, ...reportOldKeys])
+
+    for (const filePath of reportKeys) {
+      this.diffCoverageReport[filePath] = {
         branches: {
-          newPct: this.getPercentage(coverageReportNew[key].branches)
+          newPct: this.getPercentage(coverageReportNew[filePath]?.branches),
+          oldPct: this.getPercentage(coverageReportOld[filePath]?.branches)
         },
         statements: {
-          newPct: this.getPercentage(coverageReportNew[key].statements)
+          newPct: this.getPercentage(coverageReportNew[filePath]?.statements),
+          oldPct: this.getPercentage(coverageReportOld[filePath]?.statements)
         },
         lines: {
-          newPct: this.getPercentage(coverageReportNew[key].lines)
+          newPct: this.getPercentage(coverageReportNew[filePath]?.lines),
+          oldPct: this.getPercentage(coverageReportOld[filePath]?.lines)
         },
         functions: {
-          newPct: this.getPercentage(coverageReportNew[key].functions)
-        }
-      }
-    }
-    const reportOldKeys = Object.keys(coverageReportOld)
-    for (const key of reportOldKeys) {
-      if (this.diffCoverageReport[key]) {
-        this.diffCoverageReport[key].statements.oldPct = this.getPercentage(
-          coverageReportOld[key].statements
-        )
-        this.diffCoverageReport[key].branches.oldPct = this.getPercentage(
-          coverageReportOld[key].branches
-        )
-        this.diffCoverageReport[key].functions.oldPct = this.getPercentage(
-          coverageReportOld[key].functions
-        )
-        this.diffCoverageReport[key].lines.oldPct = this.getPercentage(
-          coverageReportOld[key].lines
-        )
-      } else {
-        this.diffCoverageReport[key] = {
-          branches: {
-            oldPct: this.getPercentage(coverageReportOld[key].branches)
-          },
-          statements: {
-            oldPct: this.getPercentage(coverageReportOld[key].statements)
-          },
-          lines: {
-            oldPct: this.getPercentage(coverageReportOld[key].lines)
-          },
-          functions: {
-            oldPct: this.getPercentage(coverageReportOld[key].functions)
-          }
+          newPct: this.getPercentage(coverageReportNew[filePath]?.functions),
+          oldPct: this.getPercentage(coverageReportOld[filePath]?.functions)
         }
       }
     }
@@ -156,7 +131,7 @@ export class DiffChecker {
   }
 
   private getPercentage(coverageData: CoverageData): number {
-    return coverageData.pct || 0
+    return coverageData?.pct || 0
   }
 
   private getStatusIcon(

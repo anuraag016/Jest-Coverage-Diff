@@ -41,7 +41,6 @@ describe("DiffChecker", () => {
     const codeCoverageOld = {
       file1: mock99CoverageFile,
       file2: mock100CoverageFile,
-      file3: mockEmptyCoverageFile,
       file4: mock100CoverageFile,
       file5: mock99CoverageFile,
     };
@@ -49,7 +48,6 @@ describe("DiffChecker", () => {
       file1: mock100CoverageFile,
       file2: mock99CoverageFile,
       file3: mock100CoverageFile,
-      file4: mockEmptyCoverageFile,
       file5: {
         statements: mock99Coverage,
         branches: mockEmptyCoverage,
@@ -63,8 +61,8 @@ describe("DiffChecker", () => {
       " :green_circle: | file1 | 100 **(1)** | 100 **(1)** | 100 **(1)** | 100 **(1)**",
       " :red_circle: | file2 | 99 **(-1)** | 99 **(-1)** | 99 **(-1)** | 99 **(-1)**",
       " :sparkles: :new: | **file3** | **100** | **100** | **100** | **100**",
-      " :x: | ~~file4~~ | ~~100~~ | ~~100~~ | ~~100~~ | ~~100~~",
       " :red_circle: | file5 | 99 **(0)** | 0 **(-99)** | 99 **(0)** | 99 **(0)**",
+      " :x: | ~~file4~~ | ~~100~~ | ~~100~~ | ~~100~~ | ~~100~~",
     ])
   });
 });
