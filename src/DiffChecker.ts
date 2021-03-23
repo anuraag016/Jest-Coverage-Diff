@@ -6,7 +6,8 @@ import {DiffCoverageData} from './Model/DiffCoverageData'
 
 const increasedCoverageIcon = ':green_circle:'
 const decreasedCoverageIcon = ':red_circle:'
-const newCoverageIcon = ':new:'
+const newCoverageIcon = ':sparkles: :new:'
+const removedCoverageIcon = ':x:'
 
 export class DiffChecker {
   private diffCoverageReport: DiffCoverageReport = {}
@@ -114,12 +115,18 @@ export class DiffChecker {
     name: string,
     diffFileCoverageData: DiffFileCoverageData
   ): string {
-    if (!diffFileCoverageData.branches.oldPct) {
-      // No old coverage found so that means we added a new file coverage
+    // No old coverage found so that means we added a new file coverage
+    const fileNewCoverage = Object.values(diffFileCoverageData).every(
+      coverageData => coverageData.oldPct === 0
+    )
+    // No new coverage found so that means we deleted a file coverage
+    const fileRemovedCoverage = Object.values(diffFileCoverageData).every(
+      coverageData => coverageData.newPct === 0
+    )
+    if (fileNewCoverage) {
       return ` ${newCoverageIcon} | **${name}** | **${diffFileCoverageData.statements.newPct}** | **${diffFileCoverageData.branches.newPct}** | **${diffFileCoverageData.functions.newPct}** | **${diffFileCoverageData.lines.newPct}**`
-    } else if (!diffFileCoverageData.branches.newPct) {
-      // No new coverage found so that means we added a new deleted coverage
-      return ` ${decreasedCoverageIcon} | ~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`
+    } else if (fileRemovedCoverage) {
+      return ` ${removedCoverageIcon} | ~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`
     }
     // Coverage existed before so calculate the diff status
     const statusIcon = this.getStatusIcon(diffFileCoverageData)
