@@ -6679,51 +6679,34 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DiffChecker = void 0;
 const increasedCoverageIcon = ':green_circle:';
 const decreasedCoverageIcon = ':red_circle:';
-const newCoverageIcon = ':new:';
+const newCoverageIcon = ':sparkles: :new:';
+const removedCoverageIcon = ':x:';
 class DiffChecker {
     constructor(coverageReportNew, coverageReportOld) {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         this.diffCoverageReport = {};
         const reportNewKeys = Object.keys(coverageReportNew);
-        for (const key of reportNewKeys) {
-            this.diffCoverageReport[key] = {
+        const reportOldKeys = Object.keys(coverageReportOld);
+        const reportKeys = new Set([...reportNewKeys, ...reportOldKeys]);
+        for (const filePath of reportKeys) {
+            this.diffCoverageReport[filePath] = {
                 branches: {
-                    newPct: this.getPercentage(coverageReportNew[key].branches)
+                    newPct: this.getPercentage((_a = coverageReportNew[filePath]) === null || _a === void 0 ? void 0 : _a.branches),
+                    oldPct: this.getPercentage((_b = coverageReportOld[filePath]) === null || _b === void 0 ? void 0 : _b.branches)
                 },
                 statements: {
-                    newPct: this.getPercentage(coverageReportNew[key].statements)
+                    newPct: this.getPercentage((_c = coverageReportNew[filePath]) === null || _c === void 0 ? void 0 : _c.statements),
+                    oldPct: this.getPercentage((_d = coverageReportOld[filePath]) === null || _d === void 0 ? void 0 : _d.statements)
                 },
                 lines: {
-                    newPct: this.getPercentage(coverageReportNew[key].lines)
+                    newPct: this.getPercentage((_e = coverageReportNew[filePath]) === null || _e === void 0 ? void 0 : _e.lines),
+                    oldPct: this.getPercentage((_f = coverageReportOld[filePath]) === null || _f === void 0 ? void 0 : _f.lines)
                 },
                 functions: {
-                    newPct: this.getPercentage(coverageReportNew[key].functions)
+                    newPct: this.getPercentage((_g = coverageReportNew[filePath]) === null || _g === void 0 ? void 0 : _g.functions),
+                    oldPct: this.getPercentage((_h = coverageReportOld[filePath]) === null || _h === void 0 ? void 0 : _h.functions)
                 }
             };
-        }
-        const reportOldKeys = Object.keys(coverageReportOld);
-        for (const key of reportOldKeys) {
-            if (this.diffCoverageReport[key]) {
-                this.diffCoverageReport[key].statements.oldPct = this.getPercentage(coverageReportOld[key].statements);
-                this.diffCoverageReport[key].branches.oldPct = this.getPercentage(coverageReportOld[key].branches);
-                this.diffCoverageReport[key].functions.oldPct = this.getPercentage(coverageReportOld[key].functions);
-                this.diffCoverageReport[key].lines.oldPct = this.getPercentage(coverageReportOld[key].lines);
-            }
-            else {
-                this.diffCoverageReport[key] = {
-                    branches: {
-                        oldPct: this.getPercentage(coverageReportOld[key].branches)
-                    },
-                    statements: {
-                        oldPct: this.getPercentage(coverageReportOld[key].statements)
-                    },
-                    lines: {
-                        oldPct: this.getPercentage(coverageReportOld[key].lines)
-                    },
-                    functions: {
-                        oldPct: this.getPercentage(coverageReportOld[key].functions)
-                    }
-                };
-            }
         }
     }
     getCoverageDetails(diffOnly, currentDirectory) {
@@ -6757,13 +6740,15 @@ class DiffChecker {
         return false;
     }
     createDiffLine(name, diffFileCoverageData) {
-        if (!diffFileCoverageData.branches.oldPct) {
-            // No old coverage found so that means we added a new file coverage
+        // No old coverage found so that means we added a new file coverage
+        const fileNewCoverage = Object.values(diffFileCoverageData).every(coverageData => coverageData.oldPct === 0);
+        // No new coverage found so that means we deleted a file coverage
+        const fileRemovedCoverage = Object.values(diffFileCoverageData).every(coverageData => coverageData.newPct === 0);
+        if (fileNewCoverage) {
             return ` ${newCoverageIcon} | **${name}** | **${diffFileCoverageData.statements.newPct}** | **${diffFileCoverageData.branches.newPct}** | **${diffFileCoverageData.functions.newPct}** | **${diffFileCoverageData.lines.newPct}**`;
         }
-        else if (!diffFileCoverageData.branches.newPct) {
-            // No new coverage found so that means we added a new deleted coverage
-            return ` ${decreasedCoverageIcon} | ~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`;
+        else if (fileRemovedCoverage) {
+            return ` ${removedCoverageIcon} | ~~${name}~~ | ~~${diffFileCoverageData.statements.oldPct}~~ | ~~${diffFileCoverageData.branches.oldPct}~~ | ~~${diffFileCoverageData.functions.oldPct}~~ | ~~${diffFileCoverageData.lines.oldPct}~~`;
         }
         // Coverage existed before so calculate the diff status
         const statusIcon = this.getStatusIcon(diffFileCoverageData);
@@ -6779,7 +6764,7 @@ class DiffChecker {
         return 0;
     }
     getPercentage(coverageData) {
-        return coverageData.pct;
+        return (coverageData === null || coverageData === void 0 ? void 0 : coverageData.pct) || 0;
     }
     getStatusIcon(diffFileCoverageData) {
         let overallDiff = 0;
