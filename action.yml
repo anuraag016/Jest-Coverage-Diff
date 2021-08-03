@@ -11,6 +11,9 @@ inputs:
   runCommand:
     description: 'custom command to get json-summary'
     default: 'npx jest --coverage --coverageReporters="json-summary" --coverageDirectory="./"'
+  afterSwitchCommand:
+    description: 'command to run after switching to default branch'
+    default: null
   delta:
     description: 'Difference between the old and final test coverage'
     default: 100
