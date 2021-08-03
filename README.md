@@ -30,6 +30,7 @@ The action assumes jest configuration and jest module already present in the wor
 
 **NEW:** 
 
+ - The action now supports runnning a command just after switching to base branch, this is extremely helpful in cases where there might be some packages removed in the pull request raised, in such cases there now is a possibility to re run the npm ci/npm install commands before running the jset coverage on base branch. Use `afterSwitchCommand` variable to pass a custom command to be run after switching to base branch. 
  - The action now supports custom run command, for custom use cases, using the variable runCommand, you can now pass your own command to run. Following is an example where we want to collect coverage from only few files out of all the code and want to use custom options such as `forceExit` & `detectOpenHandles`.
 ```bash
    runCommand: "npx jest --collectCoverageFrom='[\"src/**/*.{js,jsx,ts,tsx}\"]' --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters='json-summary' --forceExit --detectOpenHandles test/.*test.*"
