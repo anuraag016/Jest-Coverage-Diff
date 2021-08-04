@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     const githubToken = core.getInput('accessToken')
     const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'))
     const commandToRun = core.getInput('runCommand')
-    const commandAfterSwitch = core.getInput('runCommand')
+    const commandAfterSwitch = core.getInput('afterSwitchCommand')
     const delta = Number(core.getInput('delta'))
     const githubClient = github.getOctokit(githubToken)
     const prNumber = github.context.issue.number
