@@ -1,3 +1,3 @@
-describe('Basic Test Suite', ()=> {
-  it('', ()=>{})
+describe('Basic Test Suite', () => {
+  it('', () => {})
 })

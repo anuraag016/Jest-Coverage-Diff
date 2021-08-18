@@ -2030,6 +2030,7 @@ function run() {
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
             const commandToRun = core.getInput('runCommand');
+            const commandAfterSwitch = core.getInput('afterSwitchCommand');
             const delta = Number(core.getInput('delta'));
             const githubClient = github.getOctokit(githubToken);
             const prNumber = github.context.issue.number;
@@ -2040,6 +2041,9 @@ function run() {
             child_process_1.execSync('/usr/bin/git fetch');
             child_process_1.execSync('/usr/bin/git stash');
             child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
+            if (commandAfterSwitch) {
+                child_process_1.execSync(commandAfterSwitch);
+            }
             child_process_1.execSync(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
             const currentDirectory = child_process_1.execSync('pwd')
