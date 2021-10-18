@@ -74,6 +74,14 @@ export class DiffChecker {
       const keys: ('lines' | 'statements' | 'branches' | 'functions')[] = <
         ('lines' | 'statements' | 'branches' | 'functions')[]
       >Object.keys(diffCoverageData)
+      // No new coverage found so that means we deleted a file coverage
+      const fileRemovedCoverage = Object.values(diffCoverageData).every(
+        coverageData => coverageData.newPct === 0
+      )
+      if (fileRemovedCoverage) {
+        // since the file is deleted don't include in delta calculation
+        continue
+      }
       for (const key of keys) {
         if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
           if (-this.getPercentageDiff(diffCoverageData[key]) > delta) {

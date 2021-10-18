@@ -4,6 +4,9 @@ import {execSync} from 'child_process'
 import fs from 'fs'
 import {CoverageReport} from './Model/CoverageReport'
 import {DiffChecker} from './DiffChecker'
+import {Octokit} from '@octokit/core'
+import {PaginateInterface} from '@octokit/plugin-paginate-rest'
+import {RestEndpointMethods} from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/method-types'
 
 async function run(): Promise<void> {
   try {
@@ -18,6 +21,10 @@ async function run(): Promise<void> {
     const prNumber = github.context.issue.number
     const branchNameBase = github.context.payload.pull_request?.base.ref
     const branchNameHead = github.context.payload.pull_request?.head.ref
+    const useSameComment = JSON.parse(core.getInput('useSameComment'))
+    const commentIdentifier = `<!-- codeCoverageDiffComment -->`
+    const deltaCommentIdentifier = `<!-- codeCoverageDeltaComment -->`
+    let commentId = null
     execSync(commandToRun)
     const codeCoverageNew = <CoverageReport>(
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
@@ -53,27 +60,90 @@ async function run(): Promise<void> {
         'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n'
       messageToPost += coverageDetails.join('\n')
     }
+    messageToPost = `${commentIdentifier}\n${messageToPost}`
+    if (useSameComment) {
+      commentId = await findComment(
+        githubClient,
+        repoName,
+        repoOwner,
+        prNumber,
+        commentIdentifier
+      )
+    }
+    await createOrUpdateComment(
+      commentId,
+      githubClient,
+      repoOwner,
+      repoName,
+      messageToPost,
+      prNumber
+    )
+
+    // check if the test coverage is falling below delta/tolerance.
+    if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
+      messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`
+      messageToPost = `${deltaCommentIdentifier}\n${messageToPost}`
+      await createOrUpdateComment(
+        commentId,
+        githubClient,
+        repoOwner,
+        repoName,
+        messageToPost,
+        prNumber
+      )
+      throw Error(messageToPost)
+    }
+  } catch (error) {
+    core.setFailed(error)
+  }
+}
+
+async function createOrUpdateComment(
+  commentId: number | null,
+  githubClient: {[x: string]: any} & {[x: string]: any} & Octokit &
+    RestEndpointMethods & {paginate: PaginateInterface},
+  repoOwner: string,
+  repoName: string,
+  messageToPost: string,
+  prNumber: number
+) {
+  if (commentId) {
+    await githubClient.issues.updateComment({
+      owner: repoOwner,
+      repo: repoName,
+      comment_id: commentId,
+      body: messageToPost
+    })
+  } else {
     await githubClient.issues.createComment({
       repo: repoName,
       owner: repoOwner,
       body: messageToPost,
       issue_number: prNumber
     })
-
-    // check if the test coverage is falling below delta/tolerance.
-    if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
-      messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`
-      await githubClient.issues.createComment({
-        repo: repoName,
-        owner: repoOwner,
-        body: messageToPost,
-        issue_number: prNumber
-      })
-      throw Error(messageToPost)
-    }
-  } catch (error) {
-    core.setFailed(error)
   }
+}
+
+async function findComment(
+  githubClient: {[x: string]: any} & {[x: string]: any} & Octokit &
+    RestEndpointMethods & {paginate: PaginateInterface},
+  repoName: string,
+  repoOwner: string,
+  prNumber: number,
+  identifier: string
+): Promise<number> {
+  const comments = await githubClient.issues.listComments({
+    owner: repoOwner,
+    repo: repoName,
+    issue_number: prNumber
+  })
+
+  for (const comment of comments.data) {
+    if (comment.body.startsWith(identifier)) {
+      return comment.id
+    }
+  }
+  return 0
 }
 
 run()

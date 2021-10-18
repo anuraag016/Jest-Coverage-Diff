@@ -17,6 +17,9 @@ inputs:
   delta:
     description: 'Difference between the old and final test coverage'
     default: 100
+  useSameComment:
+    description: 'While commenting on the PR update the exisiting comment'
+    default: false
 branding:
   color: red
   icon: git-pull-request
