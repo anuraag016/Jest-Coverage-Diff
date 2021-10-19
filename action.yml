@@ -16,7 +16,7 @@ inputs:
     default: null
   delta:
     description: 'Difference between the old and final test coverage'
-    default: 100
+    default: 0
 branding:
   color: red
   icon: git-pull-request

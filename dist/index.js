@@ -2021,6 +2021,8 @@ const github = __importStar(__webpack_require__(469));
 const child_process_1 = __webpack_require__(129);
 const fs_1 = __importDefault(__webpack_require__(747));
 const DiffChecker_1 = __webpack_require__(563);
+const safeExec = (cmd) => child_process_1.execSync(cmd, { stdio: 'ignore' });
+const coverageLabel = 'jest-coverage-down';
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -2036,48 +2038,58 @@ function run() {
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
             const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
-            child_process_1.execSync(commandToRun);
+            const clientParams = {
+                repo: repoName,
+                owner: repoOwner,
+                issue_number: prNumber
+            };
+            console.log(`Current branch: ${branchNameHead}.`);
+            console.log(commandToRun);
+            safeExec(commandToRun);
             const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            child_process_1.execSync('/usr/bin/git fetch');
-            child_process_1.execSync('/usr/bin/git stash');
-            child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
+            console.log('Fetching...');
+            safeExec('/usr/bin/git fetch');
+            console.log('Stashing...');
+            safeExec('/usr/bin/git stash');
+            console.log(`Checking out ${branchNameBase}.`);
+            safeExec(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
             if (commandAfterSwitch) {
-                child_process_1.execSync(commandAfterSwitch);
+                safeExec(commandAfterSwitch);
             }
-            child_process_1.execSync(commandToRun);
+            console.log(commandToRun);
+            safeExec(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
             const currentDirectory = child_process_1.execSync('pwd')
                 .toString()
                 .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
-            let messageToPost = `## Test coverage results :test_tube: \n
-    Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n\n`;
+            let messageToPost = `## :x: Test coverage decrease
+Code coverage diff between base branch:\`${branchNameBase}\` and head branch: \`${branchNameHead}\`
+Current PR reduces the test coverage percentage \n\n`;
             const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
-            if (coverageDetails.length === 0) {
-                messageToPost =
-                    'No changes to code coverage between the base branch and the head branch';
-            }
-            else {
+            if (coverageDetails.length !== 0) {
                 messageToPost +=
                     'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n';
                 messageToPost += coverageDetails.join('\n');
             }
-            yield githubClient.issues.createComment({
-                repo: repoName,
-                owner: repoOwner,
-                body: messageToPost,
-                issue_number: prNumber
-            });
-            // check if the test coverage is falling below delta/tolerance.
+            console.log(`Message to post: ${messageToPost}`);
+            console.log(`Checking if coverage has gone down by more than ${delta}%`);
             if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
-                messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`;
-                yield githubClient.issues.createComment({
-                    repo: repoName,
-                    owner: repoOwner,
-                    body: messageToPost,
-                    issue_number: prNumber
-                });
-                throw Error(messageToPost);
+                console.log('Coverage Down. Creating comment and adding label.');
+                yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: messageToPost }));
+                yield githubClient.issues.addLabels(Object.assign(Object.assign({}, clientParams), { labels: [coverageLabel] }));
+            }
+            else {
+                console.log('Coverage did not go down.');
+                const labels = yield githubClient.issues.listLabelsOnIssue(clientParams);
+                if (labels.data.map(l => l.name).includes(coverageLabel)) {
+                    console.log(`Label ${coverageLabel} found. Commenting and removing label.`);
+                    yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: `## :white_check_mark: Test coverage decrease undone` }));
+                    yield githubClient.issues.removeLabel(Object.assign(Object.assign({}, clientParams), { name: coverageLabel }));
+                }
+                else {
+                    console.log(`Label ${coverageLabel} not found. Doing nothing.`);
+                }
             }
         }
         catch (error) {

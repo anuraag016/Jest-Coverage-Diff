@@ -5,6 +5,10 @@ import fs from 'fs'
 import {CoverageReport} from './Model/CoverageReport'
 import {DiffChecker} from './DiffChecker'
 
+const safeExec = (cmd: string) => execSync(cmd, {stdio: 'ignore'})
+
+const coverageLabel = 'jest-coverage-down'
+
 async function run(): Promise<void> {
   try {
     const repoName = github.context.repo.repo
@@ -18,17 +22,28 @@ async function run(): Promise<void> {
     const prNumber = github.context.issue.number
     const branchNameBase = github.context.payload.pull_request?.base.ref
     const branchNameHead = github.context.payload.pull_request?.head.ref
-    execSync(commandToRun)
+    const clientParams = {
+      repo: repoName,
+      owner: repoOwner,
+      issue_number: prNumber
+    }
+    console.log(`Current branch: ${branchNameHead}.`)
+    console.log(commandToRun)
+    safeExec(commandToRun)
     const codeCoverageNew = <CoverageReport>(
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
     )
-    execSync('/usr/bin/git fetch')
-    execSync('/usr/bin/git stash')
-    execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`)
+    console.log('Fetching...')
+    safeExec('/usr/bin/git fetch')
+    console.log('Stashing...')
+    safeExec('/usr/bin/git stash')
+    console.log(`Checking out ${branchNameBase}.`)
+    safeExec(`/usr/bin/git checkout --progress --force ${branchNameBase}`)
     if (commandAfterSwitch) {
-      execSync(commandAfterSwitch)
+      safeExec(commandAfterSwitch)
     }
-    execSync(commandToRun)
+    console.log(commandToRun)
+    safeExec(commandToRun)
     const codeCoverageOld = <CoverageReport>(
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
     )
@@ -39,40 +54,52 @@ async function run(): Promise<void> {
       codeCoverageNew,
       codeCoverageOld
     )
-    let messageToPost = `## Test coverage results :test_tube: \n
-    Code coverage diff between base branch:${branchNameBase} and head branch: ${branchNameHead} \n\n`
+    let messageToPost = `## :x: Test coverage decrease
+Code coverage diff between base branch:\`${branchNameBase}\` and head branch: \`${branchNameHead}\`
+Current PR reduces the test coverage percentage \n\n`
     const coverageDetails = diffChecker.getCoverageDetails(
       !fullCoverage,
       `${currentDirectory}/`
     )
-    if (coverageDetails.length === 0) {
-      messageToPost =
-        'No changes to code coverage between the base branch and the head branch'
-    } else {
+    if (coverageDetails.length !== 0) {
       messageToPost +=
         'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n'
       messageToPost += coverageDetails.join('\n')
     }
-    await githubClient.issues.createComment({
-      repo: repoName,
-      owner: repoOwner,
-      body: messageToPost,
-      issue_number: prNumber
-    })
-
-    // check if the test coverage is falling below delta/tolerance.
+    console.log(`Message to post: ${messageToPost}`)
+    console.log(`Checking if coverage has gone down by more than ${delta}%`)
     if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
-      messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`
+      console.log('Coverage Down. Creating comment and adding label.')
       await githubClient.issues.createComment({
-        repo: repoName,
-        owner: repoOwner,
-        body: messageToPost,
-        issue_number: prNumber
+        ...clientParams,
+        body: messageToPost
       })
-      throw Error(messageToPost)
+      await githubClient.issues.addLabels({
+        ...clientParams,
+        labels: [coverageLabel]
+      })
+    } else {
+      console.log('Coverage did not go down.')
+      const labels = await githubClient.issues.listLabelsOnIssue(clientParams)
+
+      if (labels.data.map(l => l.name).includes(coverageLabel)) {
+        console.log(
+          `Label ${coverageLabel} found. Commenting and removing label.`
+        )
+        await githubClient.issues.createComment({
+          ...clientParams,
+          body: `## :white_check_mark: Test coverage decrease undone`
+        })
+        await githubClient.issues.removeLabel({
+          ...clientParams,
+          name: coverageLabel
+        })
+      } else {
+        console.log(`Label ${coverageLabel} not found. Doing nothing.`)
+      }
     }
   } catch (error) {
-    core.setFailed(error)
+    core.setFailed(error as Error)
   }
 }
 
