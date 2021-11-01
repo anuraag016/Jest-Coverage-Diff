@@ -2016,12 +2016,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/* eslint-disable no-console */
 const core = __importStar(__webpack_require__(470));
 const github = __importStar(__webpack_require__(469));
 const child_process_1 = __webpack_require__(129);
 const fs_1 = __importDefault(__webpack_require__(747));
 const DiffChecker_1 = __webpack_require__(563);
-const safeExec = (cmd) => child_process_1.execSync(cmd, { stdio: 'ignore' });
+const safeExec = (cmd) => {
+    child_process_1.execSync(cmd, { stdio: 'ignore' });
+};
 const coverageLabel = 'jest-coverage-down';
 function run() {
     var _a, _b;
@@ -2041,6 +2044,7 @@ function run() {
             const clientParams = {
                 repo: repoName,
                 owner: repoOwner,
+                // eslint-disable-next-line @typescript-eslint/camelcase
                 issue_number: prNumber
             };
             console.log(`Current branch: ${branchNameHead}.`);

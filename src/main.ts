@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {execSync} from 'child_process'
@@ -5,7 +6,9 @@ import fs from 'fs'
 import {CoverageReport} from './Model/CoverageReport'
 import {DiffChecker} from './DiffChecker'
 
-const safeExec = (cmd: string) => execSync(cmd, {stdio: 'ignore'})
+const safeExec = (cmd: string): void => {
+  execSync(cmd, {stdio: 'ignore'})
+}
 
 const coverageLabel = 'jest-coverage-down'
 
@@ -25,6 +28,7 @@ async function run(): Promise<void> {
     const clientParams = {
       repo: repoName,
       owner: repoOwner,
+      // eslint-disable-next-line @typescript-eslint/camelcase
       issue_number: prNumber
     }
     console.log(`Current branch: ${branchNameHead}.`)
