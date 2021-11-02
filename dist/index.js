@@ -2015,6 +2015,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 /* eslint-disable no-console */
 const core = __importStar(__webpack_require__(470));
@@ -2025,28 +2026,60 @@ const DiffChecker_1 = __webpack_require__(563);
 const safeExec = (cmd) => {
     child_process_1.execSync(cmd, { stdio: 'ignore' });
 };
+const getComment = (diffChecker) => {
+    const currentDirectory = child_process_1.execSync('pwd')
+        .toString()
+        .trim();
+    let messageToPost = `## :x: Test coverage decrease
+Code coverage diff between base branch:\`${branchNameBase}\` and head branch: \`${branchNameHead}\`
+Current PR reduces the test coverage percentage \n\n`;
+    const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
+    if (coverageDetails.length !== 0) {
+        messageToPost +=
+            'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n';
+        messageToPost += coverageDetails.join('\n');
+    }
+    console.log(`Message to post:`);
+    console.log(messageToPost);
+    console.log(`End of message to post:`);
+    return messageToPost;
+};
+const checkHasLabel = () => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(`Checking if coverage has gone down by more than ${delta}%`);
+    const labels = yield githubClient.issues.listLabelsOnIssue(clientParams);
+    return labels.data.map(l => l.name).includes(coverageLabel);
+});
+const notifyCoverageUp = () => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Commenting and removing label.');
+    yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: `## :white_check_mark: Test coverage decrease undone` }));
+    yield githubClient.issues.removeLabel(Object.assign(Object.assign({}, clientParams), { name: coverageLabel }));
+});
+const notifyCoverageDown = (comment) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Creating comment and adding label.');
+    yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: comment }));
+    yield githubClient.issues.addLabels(Object.assign(Object.assign({}, clientParams), { labels: [coverageLabel] }));
+});
 const coverageLabel = 'jest-coverage-down';
+const repoName = github.context.repo.repo;
+const repoOwner = github.context.repo.owner;
+const githubToken = core.getInput('accessToken');
+const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
+const commandToRun = core.getInput('runCommand');
+const commandAfterSwitch = core.getInput('afterSwitchCommand');
+const delta = Number(core.getInput('delta'));
+const githubClient = github.getOctokit(githubToken);
+const prNumber = github.context.issue.number;
+const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
+const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
+const clientParams = {
+    repo: repoName,
+    owner: repoOwner,
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    issue_number: prNumber
+};
 function run() {
-    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const repoName = github.context.repo.repo;
-            const repoOwner = github.context.repo.owner;
-            const githubToken = core.getInput('accessToken');
-            const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
-            const commandToRun = core.getInput('runCommand');
-            const commandAfterSwitch = core.getInput('afterSwitchCommand');
-            const delta = Number(core.getInput('delta'));
-            const githubClient = github.getOctokit(githubToken);
-            const prNumber = github.context.issue.number;
-            const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
-            const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
-            const clientParams = {
-                repo: repoName,
-                owner: repoOwner,
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                issue_number: prNumber
-            };
             console.log(`Current branch: ${branchNameHead}.`);
             console.log(commandToRun);
             safeExec(commandToRun);
@@ -2063,37 +2096,26 @@ function run() {
             console.log(commandToRun);
             safeExec(commandToRun);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            const currentDirectory = child_process_1.execSync('pwd')
-                .toString()
-                .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
-            let messageToPost = `## :x: Test coverage decrease
-Code coverage diff between base branch:\`${branchNameBase}\` and head branch: \`${branchNameHead}\`
-Current PR reduces the test coverage percentage \n\n`;
-            const coverageDetails = diffChecker.getCoverageDetails(!fullCoverage, `${currentDirectory}/`);
-            if (coverageDetails.length !== 0) {
-                messageToPost +=
-                    'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n';
-                messageToPost += coverageDetails.join('\n');
+            const comment = getComment(diffChecker);
+            const coverageDown = diffChecker.checkIfTestCoverageFallsBelowDelta(delta);
+            const hasLabel = yield checkHasLabel();
+            if (coverageDown && hasLabel) {
+                console.log('Coverage Down.');
+                console.log(`PR already has ${coverageLabel} tag. Doing nothing.`);
             }
-            console.log(`Message to post: ${messageToPost}`);
-            console.log(`Checking if coverage has gone down by more than ${delta}%`);
-            if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
-                console.log('Coverage Down. Creating comment and adding label.');
-                yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: messageToPost }));
-                yield githubClient.issues.addLabels(Object.assign(Object.assign({}, clientParams), { labels: [coverageLabel] }));
+            if (coverageDown && !hasLabel) {
+                console.log('Coverage Down.');
+                yield notifyCoverageDown(comment);
             }
-            else {
+            if (!coverageDown && hasLabel) {
                 console.log('Coverage did not go down.');
-                const labels = yield githubClient.issues.listLabelsOnIssue(clientParams);
-                if (labels.data.map(l => l.name).includes(coverageLabel)) {
-                    console.log(`Label ${coverageLabel} found. Commenting and removing label.`);
-                    yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: `## :white_check_mark: Test coverage decrease undone` }));
-                    yield githubClient.issues.removeLabel(Object.assign(Object.assign({}, clientParams), { name: coverageLabel }));
-                }
-                else {
-                    console.log(`Label ${coverageLabel} not found. Doing nothing.`);
-                }
+                console.log(`Label ${coverageLabel} found.`);
+                yield notifyCoverageUp();
+            }
+            if (!coverageDown && !hasLabel) {
+                console.log('Coverage did not go down.');
+                console.log(`Label ${coverageLabel} not found. Doing nothing.`);
             }
         }
         catch (error) {
