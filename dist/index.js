@@ -2119,7 +2119,8 @@ function run() {
             }
         }
         catch (error) {
-            core.setFailed(error);
+          console.log('ERROR', error)
+          core.setFailed(error);
         }
     });
 }

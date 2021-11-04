@@ -144,6 +144,7 @@ async function run(): Promise<void> {
       console.log(`Label ${coverageLabel} not found. Doing nothing.`)
     }
   } catch (error) {
+    console.log('ERROR', error)
     core.setFailed(error as Error)
   }
 }
