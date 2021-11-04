@@ -10,7 +10,7 @@ Make any changes you like in the `src/` directory.
 
 Run the following command to lint, prettify, build, pack and test your code.
 ```
-yarn all
+npm run all
 ```
 
 Add the changes in `src/` and the new changes in `dist/` to your commit.
