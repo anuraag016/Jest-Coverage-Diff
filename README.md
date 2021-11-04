@@ -1,3 +1,69 @@
+# Jane Development Tips:
+## Development in this repo
+
+For ease of testing it's easiest to make changes in a new branch.
+
+```
+git co -b my-new-branch
+```
+Make any changes you like in the `src/` directory.
+
+Run the following command to lint, prettify, build, pack and test your code.
+```
+yarn all
+```
+
+Add the changes in `src/` and the new changes in `dist/` to your commit.
+```
+git add . && git commit
+```
+
+Push the changes to github.
+```
+git push
+```
+
+## Testing with the janeapp/jane repo
+Github actions can be told which branch to run against.
+
+Create a new testing branch in the jane repo
+```
+git co -b testing-branch
+```
+
+Update the `.github/workflows/jest_coverage.yml` file which defines the coverage action. Update the Jest Coverage Diff step to point at the new branch you created in this repo.
+```
+...
+      - name: Jest Coverage Diff
+        uses: janeapp/Jest-Coverage-Diff@my-new-branch
+        with:
+          runCommand: npx jest --ci --runInBand --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters="json-summary"
+...
+```
+
+Also make any changes to code/tests that will be useful for testing the changes you made to this action.
+
+Commit and push your changes to github
+```
+git add . && git commit
+```
+
+Create a temporary PR on github targeting your new `testing-branch`
+
+The action should run the code you've changed in `my-new-branch`. To continue testing you can keep pushing changes to this PR.
+
+When you're happy with the results, merge your new banch into master in this repo. Since the master branch of `jane` still points at the master branch of this repo, your changes will be included in future action runs
+
+## Tagging
+We could consider tagging releases in this branch and pointing the `jest_coverage.yml` file at a particular tag. Because we're only being consumed in one place and development should be pretty sporadic I didn't decide to go this route, but it wouldn't be hard to implement
+
+
+&nbsp;
+&nbsp;
+&nbsp;
+
+---
+# Original Readme follows:
 # Jest coverage diff
 
 Use the action to get jest coverage diff for pull requests as a comment on the pull request
