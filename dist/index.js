@@ -2024,6 +2024,7 @@ const child_process_1 = __webpack_require__(129);
 const fs_1 = __importDefault(__webpack_require__(747));
 const DiffChecker_1 = __webpack_require__(563);
 const safeExec = (cmd) => {
+    // Remove { stdio: 'ignore' } if you want more detailed debugging
     child_process_1.execSync(cmd, { stdio: 'ignore' });
 };
 const getComment = (diffChecker) => {
@@ -2039,9 +2040,6 @@ Current PR reduces the test coverage percentage \n\n`;
             'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n';
         messageToPost += coverageDetails.join('\n');
     }
-    console.log(`Message to post:`);
-    console.log(messageToPost);
-    console.log(`End of message to post:`);
     return messageToPost;
 };
 const checkHasLabel = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -2056,6 +2054,9 @@ const notifyCoverageUp = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 const notifyCoverageDown = (comment) => __awaiter(void 0, void 0, void 0, function* () {
     console.log('Creating comment and adding label.');
+    console.log(`Message to post:`);
+    console.log(comment);
+    console.log(`End of message to post`);
     yield githubClient.issues.createComment(Object.assign(Object.assign({}, clientParams), { body: comment }));
     yield githubClient.issues.addLabels(Object.assign(Object.assign({}, clientParams), { labels: [coverageLabel] }));
 });
@@ -2064,8 +2065,6 @@ const repoName = github.context.repo.repo;
 const repoOwner = github.context.repo.owner;
 const githubToken = core.getInput('accessToken');
 const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
-const commandToRun = core.getInput('runCommand');
-const commandAfterSwitch = core.getInput('afterSwitchCommand');
 const delta = Number(core.getInput('delta'));
 const githubClient = github.getOctokit(githubToken);
 const prNumber = github.context.issue.number;
@@ -2080,22 +2079,22 @@ const clientParams = {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log(`Current branch: ${branchNameHead}.`);
-            console.log(commandToRun);
-            safeExec(commandToRun);
+            safeExec(`/usr/bin/git fetch`);
+            safeExec(`/usr/bin/git checkout ${branchNameBase}`);
+            safeExec(`/usr/bin/git checkout ${branchNameHead}`);
+            const commandToRunOnHead = `npx jest --ci --runInBand --coverage --changedSince=${branchNameBase} --collectCoverage=true --coverageDirectory='./' --coverageReporters="json-summary"`;
+            safeExec(`/usr/bin/git branch --show-current`);
+            console.log(commandToRunOnHead);
+            safeExec(commandToRunOnHead);
             const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            console.log('Fetching...');
-            safeExec('/usr/bin/git fetch');
-            console.log('Stashing...');
-            safeExec('/usr/bin/git stash');
-            console.log(`Checking out ${branchNameBase}.`);
-            safeExec(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
-            if (commandAfterSwitch) {
-                safeExec(commandAfterSwitch);
-            }
-            console.log(commandToRun);
-            safeExec(commandToRun);
+            console.log('codeCoverageNew', codeCoverageNew);
+            const relatedTests = Object.keys(codeCoverageNew).join(' ');
+            safeExec(`/usr/bin/git checkout ${branchNameBase}`);
+            const commandToRunOnBase = `npx jest --ci --runInBand --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters="json-summary" --findRelatedTests ${relatedTests}`;
+            console.log(commandToRunOnBase);
+            safeExec(commandToRunOnBase);
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
+            console.log('codeCoverageOld', codeCoverageOld);
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
             const comment = getComment(diffChecker);
             const coverageDown = diffChecker.checkIfTestCoverageFallsBelowDelta(delta);
