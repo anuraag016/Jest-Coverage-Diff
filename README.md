@@ -36,8 +36,6 @@ Update the `.github/workflows/jest_coverage.yml` file which defines the coverage
 ...
       - name: Jest Coverage Diff
         uses: janeapp/Jest-Coverage-Diff@my-new-branch
-        with:
-          runCommand: npx jest --ci --runInBand --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters="json-summary"
 ...
 ```
 
