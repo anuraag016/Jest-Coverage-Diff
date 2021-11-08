@@ -67,7 +67,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - name: TestCoverage
-      id: testCovergae
+      id: testCoverage
       uses: anuraag016/Jest-Coverage-Diff@master
       with:
         fullCoverageDiff: false // defaults to false, if made true whole coverage report is commented with the diff
