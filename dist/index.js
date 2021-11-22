@@ -2027,6 +2027,7 @@ function run() {
         try {
             const repoName = github.context.repo.repo;
             const repoOwner = github.context.repo.owner;
+            const commitSha = github.context.sha;
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
             const commandToRun = core.getInput('runCommand');
@@ -2066,7 +2067,7 @@ function run() {
                     'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n';
                 messageToPost += coverageDetails.join('\n');
             }
-            messageToPost = `${commentIdentifier}\n${messageToPost}`;
+            messageToPost = `${commentIdentifier}\nCommit SHA:${commitSha}\n${messageToPost}`;
             if (useSameComment) {
                 commentId = yield findComment(githubClient, repoName, repoOwner, prNumber, commentIdentifier);
             }
@@ -2074,7 +2075,7 @@ function run() {
             // check if the test coverage is falling below delta/tolerance.
             if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
                 messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`;
-                messageToPost = `${deltaCommentIdentifier}\n${messageToPost}`;
+                messageToPost = `${deltaCommentIdentifier}\nCommit SHA:${commitSha}\n${messageToPost}`;
                 yield createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber);
                 throw Error(messageToPost);
             }
