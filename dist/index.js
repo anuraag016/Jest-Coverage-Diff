@@ -2074,6 +2074,9 @@ function run() {
             yield createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber);
             // check if the test coverage is falling below delta/tolerance.
             if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
+                if (useSameComment) {
+                    commentId = yield findComment(githubClient, repoName, repoOwner, prNumber, deltaCommentIdentifier);
+                }
                 messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`;
                 messageToPost = `${deltaCommentIdentifier}\nCommit SHA:${commitSha}\n${messageToPost}`;
                 yield createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber);
