@@ -2027,6 +2027,7 @@ function run() {
         try {
             const repoName = github.context.repo.repo;
             const repoOwner = github.context.repo.owner;
+            const commitSha = github.context.sha;
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
             const commandToRun = core.getInput('runCommand');
@@ -2036,6 +2037,10 @@ function run() {
             const prNumber = github.context.issue.number;
             const branchNameBase = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base.ref;
             const branchNameHead = (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.ref;
+            const useSameComment = JSON.parse(core.getInput('useSameComment'));
+            const commentIdentifier = `<!-- codeCoverageDiffComment -->`;
+            const deltaCommentIdentifier = `<!-- codeCoverageDeltaComment -->`;
+            let commentId = null;
             child_process_1.execSync(commandToRun);
             const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
             child_process_1.execSync('/usr/bin/git fetch');
@@ -2062,27 +2067,60 @@ function run() {
                     'Status | File | % Stmts | % Branch | % Funcs | % Lines \n -----|-----|---------|----------|---------|------ \n';
                 messageToPost += coverageDetails.join('\n');
             }
-            yield githubClient.issues.createComment({
-                repo: repoName,
-                owner: repoOwner,
-                body: messageToPost,
-                issue_number: prNumber
-            });
+            messageToPost = `${commentIdentifier}\nCommit SHA:${commitSha}\n${messageToPost}`;
+            if (useSameComment) {
+                commentId = yield findComment(githubClient, repoName, repoOwner, prNumber, commentIdentifier);
+            }
+            yield createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber);
             // check if the test coverage is falling below delta/tolerance.
             if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
+                if (useSameComment) {
+                    commentId = yield findComment(githubClient, repoName, repoOwner, prNumber, deltaCommentIdentifier);
+                }
                 messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`;
-                yield githubClient.issues.createComment({
-                    repo: repoName,
-                    owner: repoOwner,
-                    body: messageToPost,
-                    issue_number: prNumber
-                });
+                messageToPost = `${deltaCommentIdentifier}\nCommit SHA:${commitSha}\n${messageToPost}`;
+                yield createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber);
                 throw Error(messageToPost);
             }
         }
         catch (error) {
             core.setFailed(error);
         }
+    });
+}
+function createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (commentId) {
+            yield githubClient.issues.updateComment({
+                owner: repoOwner,
+                repo: repoName,
+                comment_id: commentId,
+                body: messageToPost
+            });
+        }
+        else {
+            yield githubClient.issues.createComment({
+                repo: repoName,
+                owner: repoOwner,
+                body: messageToPost,
+                issue_number: prNumber
+            });
+        }
+    });
+}
+function findComment(githubClient, repoName, repoOwner, prNumber, identifier) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const comments = yield githubClient.issues.listComments({
+            owner: repoOwner,
+            repo: repoName,
+            issue_number: prNumber
+        });
+        for (const comment of comments.data) {
+            if (comment.body.startsWith(identifier)) {
+                return comment.id;
+            }
+        }
+        return 0;
     });
 }
 run();
@@ -6733,6 +6771,12 @@ class DiffChecker {
         for (const key of keys) {
             const diffCoverageData = this.diffCoverageReport[key];
             const keys = Object.keys(diffCoverageData);
+            // No new coverage found so that means we deleted a file coverage
+            const fileRemovedCoverage = Object.values(diffCoverageData).every(coverageData => coverageData.newPct === 0);
+            if (fileRemovedCoverage) {
+                // since the file is deleted don't include in delta calculation
+                continue;
+            }
             for (const key of keys) {
                 if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
                     if (-this.getPercentageDiff(diffCoverageData[key]) > delta) {
