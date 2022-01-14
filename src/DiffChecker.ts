@@ -67,10 +67,13 @@ export class DiffChecker {
     return returnStrings
   }
 
-  checkIfTestCoverageFallsBelowDelta(delta: number): boolean {
-    const keys = Object.keys(this.diffCoverageReport)
-    for (const key of keys) {
-      const diffCoverageData = this.diffCoverageReport[key]
+  checkIfTestCoverageFallsBelowDelta(
+    delta: number,
+    totalDelta: number | null
+  ): boolean {
+    const files = Object.keys(this.diffCoverageReport)
+    for (const file of files) {
+      const diffCoverageData = this.diffCoverageReport[file]
       const keys: ('lines' | 'statements' | 'branches' | 'functions')[] = <
         ('lines' | 'statements' | 'branches' | 'functions')[]
       >Object.keys(diffCoverageData)
@@ -84,7 +87,11 @@ export class DiffChecker {
       }
       for (const key of keys) {
         if (diffCoverageData[key].oldPct !== diffCoverageData[key].newPct) {
-          if (-this.getPercentageDiff(diffCoverageData[key]) > delta) {
+          const deltaToCompareWith =
+            file === 'total' && totalDelta !== null ? totalDelta : delta
+          if (
+            -this.getPercentageDiff(diffCoverageData[key]) > deltaToCompareWith
+          ) {
             return true
           }
         }
