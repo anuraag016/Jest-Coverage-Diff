@@ -17,6 +17,9 @@ inputs:
   delta:
     description: 'Difference between the old and final test coverage'
     default: 100
+  total_delta:
+    description: 'Difference between the old and final test coverage at the total level'
+    default: null
   useSameComment:
     description: 'While commenting on the PR update the exisiting comment'
     default: false

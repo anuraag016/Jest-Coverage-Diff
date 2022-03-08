@@ -18,6 +18,7 @@ async function run(): Promise<void> {
     const commandToRun = core.getInput('runCommand')
     const commandAfterSwitch = core.getInput('afterSwitchCommand')
     const delta = Number(core.getInput('delta'))
+    const rawTotalDelta = core.getInput('total_delta')
     const githubClient = github.getOctokit(githubToken)
     const prNumber = github.context.issue.number
     const branchNameBase = github.context.payload.pull_request?.base.ref
@@ -25,6 +26,10 @@ async function run(): Promise<void> {
     const useSameComment = JSON.parse(core.getInput('useSameComment'))
     const commentIdentifier = `<!-- codeCoverageDiffComment -->`
     const deltaCommentIdentifier = `<!-- codeCoverageDeltaComment -->`
+    let totalDelta = null
+    if (rawTotalDelta !== null) {
+      totalDelta = Number(rawTotalDelta)
+    }
     let commentId = null
     execSync(commandToRun)
     const codeCoverageNew = <CoverageReport>(
@@ -81,7 +86,7 @@ async function run(): Promise<void> {
     )
 
     // check if the test coverage is falling below delta/tolerance.
-    if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta)) {
+    if (diffChecker.checkIfTestCoverageFallsBelowDelta(delta, totalDelta)) {
       if (useSameComment) {
         commentId = await findComment(
           githubClient,
