@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import {CoverageReport} from './Model/CoverageReport'
 import {DiffCoverageReport} from './Model/DiffCoverageReport'
 import {CoverageData} from './Model/CoverageData'
@@ -82,6 +83,9 @@ export class DiffChecker {
         coverageData => coverageData.newPct === 0
       )
       if (fileRemovedCoverage) {
+        core.info(
+          `${file} : deleted or renamed and is not considered for coverage diff.`
+        )
         // since the file is deleted don't include in delta calculation
         continue
       }
@@ -92,6 +96,10 @@ export class DiffChecker {
           if (
             -this.getPercentageDiff(diffCoverageData[key]) > deltaToCompareWith
           ) {
+            const percentageDiff = this.getPercentageDiff(diffCoverageData[key])
+            core.info(
+              `percentage Diff: ${percentageDiff} is greater than delta for ${file}`
+            )
             return true
           }
         }
