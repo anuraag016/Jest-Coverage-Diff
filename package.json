@@ -26,7 +26,7 @@
   "author": "Anuraag Puri",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.4",
+    "@actions/core": "^1.9.1",
     "@actions/github": "^4.0.0"
   },
   "devDependencies": {
