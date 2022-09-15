@@ -2082,7 +2082,7 @@ function run() {
                 if (useSameComment) {
                     commentId = yield findComment(githubClient, repoName, repoOwner, prNumber, deltaCommentIdentifier);
                 }
-                messageToPost = `Current PR reduces the test coverage percentage by ${delta} for some tests`;
+                messageToPost = `Current PR reduces the test coverage percentage by ${delta} percent or more for some tests`;
                 messageToPost = `${deltaCommentIdentifier}\nCommit SHA:${commitSha}\n${messageToPost}`;
                 yield createOrUpdateComment(commentId, githubClient, repoOwner, repoName, messageToPost, prNumber);
                 throw Error(messageToPost);
