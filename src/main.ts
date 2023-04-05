@@ -27,7 +27,7 @@ async function run(): Promise<void> {
     const commentIdentifier = `<!-- codeCoverageDiffComment -->`
     const deltaCommentIdentifier = `<!-- codeCoverageDeltaComment -->`
     let totalDelta = null
-    if (rawTotalDelta !== null) {
+    if (rawTotalDelta !== '') {
       totalDelta = Number(rawTotalDelta)
     }
     let commentId = null
