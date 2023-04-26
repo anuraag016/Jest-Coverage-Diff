@@ -1,12 +1,12 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {execSync} from 'child_process'
-import fs from 'fs'
-import {CoverageReport} from './Model/CoverageReport'
-import {DiffChecker} from './DiffChecker'
 import {Octokit} from '@octokit/core'
 import {PaginateInterface} from '@octokit/plugin-paginate-rest'
 import {RestEndpointMethods} from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/method-types'
+import {execSync} from 'child_process'
+import fs from 'fs'
+import {DiffChecker} from './DiffChecker'
+import {CoverageReport} from './Model/CoverageReport'
 
 async function run(): Promise<void> {
   try {
@@ -15,6 +15,7 @@ async function run(): Promise<void> {
     const commitSha = github.context.sha
     const githubToken = core.getInput('accessToken')
     const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'))
+    const directory = core.getInput('directory')
     const commandToRun = core.getInput('runCommand')
     const commandAfterSwitch = core.getInput('afterSwitchCommand')
     const delta = Number(core.getInput('delta'))
@@ -31,21 +32,23 @@ async function run(): Promise<void> {
       totalDelta = Number(rawTotalDelta)
     }
     let commentId = null
-    execSync(commandToRun)
+    execSync(commandToRun, {cwd: directory})
     const codeCoverageNew = <CoverageReport>(
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
     )
-    execSync('/usr/bin/git fetch')
-    execSync('/usr/bin/git stash')
-    execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`)
+    execSync('/usr/bin/git fetch', {cwd: directory})
+    execSync('/usr/bin/git stash', {cwd: directory})
+    execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`, {
+      cwd: directory
+    })
     if (commandAfterSwitch) {
-      execSync(commandAfterSwitch)
+      execSync(commandAfterSwitch, {cwd: directory})
     }
-    execSync(commandToRun)
+    execSync(commandToRun, {cwd: directory})
     const codeCoverageOld = <CoverageReport>(
       JSON.parse(fs.readFileSync('coverage-summary.json').toString())
     )
-    const currentDirectory = execSync('pwd')
+    const currentDirectory = execSync('pwd', {cwd: directory})
       .toString()
       .trim()
     const diffChecker: DiffChecker = new DiffChecker(

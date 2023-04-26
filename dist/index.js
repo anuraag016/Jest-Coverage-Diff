@@ -2030,6 +2030,7 @@ function run() {
             const commitSha = github.context.sha;
             const githubToken = core.getInput('accessToken');
             const fullCoverage = JSON.parse(core.getInput('fullCoverageDiff'));
+            const directory = core.getInput('directory');
             const commandToRun = core.getInput('runCommand');
             const commandAfterSwitch = core.getInput('afterSwitchCommand');
             const delta = Number(core.getInput('delta'));
@@ -2046,17 +2047,19 @@ function run() {
                 totalDelta = Number(rawTotalDelta);
             }
             let commentId = null;
-            child_process_1.execSync(commandToRun);
+            child_process_1.execSync(commandToRun, { cwd: directory });
             const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            child_process_1.execSync('/usr/bin/git fetch');
-            child_process_1.execSync('/usr/bin/git stash');
-            child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`);
+            child_process_1.execSync('/usr/bin/git fetch', { cwd: directory });
+            child_process_1.execSync('/usr/bin/git stash', { cwd: directory });
+            child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`, {
+                cwd: directory
+            });
             if (commandAfterSwitch) {
-                child_process_1.execSync(commandAfterSwitch);
+                child_process_1.execSync(commandAfterSwitch, { cwd: directory });
             }
-            child_process_1.execSync(commandToRun);
+            child_process_1.execSync(commandToRun, { cwd: directory });
             const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
-            const currentDirectory = child_process_1.execSync('pwd')
+            const currentDirectory = child_process_1.execSync('pwd', { cwd: directory })
                 .toString()
                 .trim();
             const diffChecker = new DiffChecker_1.DiffChecker(codeCoverageNew, codeCoverageOld);
