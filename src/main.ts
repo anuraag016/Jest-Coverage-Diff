@@ -34,7 +34,9 @@ async function run(): Promise<void> {
     let commentId = null
     execSync(commandToRun, {cwd: directory})
     const codeCoverageNew = <CoverageReport>(
-      JSON.parse(fs.readFileSync('coverage-summary.json').toString())
+      JSON.parse(
+        fs.readFileSync(`${directory}/coverage-summary.json`).toString()
+      )
     )
     execSync('/usr/bin/git fetch', {cwd: directory})
     execSync('/usr/bin/git stash', {cwd: directory})
@@ -46,7 +48,9 @@ async function run(): Promise<void> {
     }
     execSync(commandToRun, {cwd: directory})
     const codeCoverageOld = <CoverageReport>(
-      JSON.parse(fs.readFileSync('coverage-summary.json').toString())
+      JSON.parse(
+        fs.readFileSync(`${directory}/coverage-summary.json`).toString()
+      )
     )
     const currentDirectory = execSync('pwd', {cwd: directory})
       .toString()

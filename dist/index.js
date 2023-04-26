@@ -2048,7 +2048,7 @@ function run() {
             }
             let commentId = null;
             child_process_1.execSync(commandToRun, { cwd: directory });
-            const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
+            const codeCoverageNew = (JSON.parse(fs_1.default.readFileSync(`${directory}/coverage-summary.json`).toString()));
             child_process_1.execSync('/usr/bin/git fetch', { cwd: directory });
             child_process_1.execSync('/usr/bin/git stash', { cwd: directory });
             child_process_1.execSync(`/usr/bin/git checkout --progress --force ${branchNameBase}`, {
@@ -2058,7 +2058,7 @@ function run() {
                 child_process_1.execSync(commandAfterSwitch, { cwd: directory });
             }
             child_process_1.execSync(commandToRun, { cwd: directory });
-            const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync('coverage-summary.json').toString()));
+            const codeCoverageOld = (JSON.parse(fs_1.default.readFileSync(`${directory}/coverage-summary.json`).toString()));
             const currentDirectory = child_process_1.execSync('pwd', { cwd: directory })
                 .toString()
                 .trim();
