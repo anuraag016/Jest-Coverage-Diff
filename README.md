@@ -47,7 +47,7 @@ The action assumes jest configuration and jest module already present in the wor
 
 Sample workflow for running this action
 
-```
+```yaml
 name: Node.js CI
 
 on: pull_request
@@ -70,7 +70,8 @@ jobs:
       id: testCoverage
       uses: anuraag016/Jest-Coverage-Diff@master
       with:
-        fullCoverageDiff: false // defaults to false, if made true whole coverage report is commented with the diff
+        fullCoverageDiff: false # defaults to false, if made true whole coverage report is commented with the diff
+        directory: ./src # defaults to '.'
         runCommand: "npx jest --collectCoverageFrom='[\"src/**/*.{js,jsx,ts,tsx}\"]' --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters='json-summary' --forceExit --detectOpenHandles test/.*test.*"
         delta: 0.5
 ```
