@@ -42,12 +42,12 @@ The action assumes jest configuration and jest module already present in the wor
  - Do you want to fail the workflow if the commited code decreases the percentage below a tolerable level? Do you to start a healthy culture of writing test cases?
  The action now also supports failing the run if percentage diff is more than a specified delta value for any file, you can specify the delta value using the variable delta
  ```bash
-   delta: 1 // the action will fail if any of the percentage dip is more than 1% for any changed file
+   delta: 1 # the action will fail if any of the percentage dip is more than 1% for any changed file
  ```
 
 Sample workflow for running this action
 
-```
+```yml
 name: Node.js CI
 
 on: pull_request
@@ -70,7 +70,7 @@ jobs:
       id: testCoverage
       uses: anuraag016/Jest-Coverage-Diff@master
       with:
-        fullCoverageDiff: false // defaults to false, if made true whole coverage report is commented with the diff
+        fullCoverageDiff: false # defaults to false, if made true whole coverage report is commented with the diff
         runCommand: "npx jest --collectCoverageFrom='[\"src/**/*.{js,jsx,ts,tsx}\"]' --coverage --collectCoverage=true --coverageDirectory='./' --coverageReporters='json-summary' --forceExit --detectOpenHandles test/.*test.*"
         delta: 0.5
 ```
